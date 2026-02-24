@@ -1,19 +1,21 @@
 const { Pool } = require('pg');
 
+// Esta línea lee automáticamente el link de Supabase desde Render
+const connectionString = process.env.DATABASE_URL;
+
 const pool = new Pool({
-    user: 'postgres',           // Tu usuario de PostgreSQL
-    host: 'localhost',          // Tu servidor (normalmente localhost)
-    database: 'floreria_margarita', // El nombre que creamos
-    password: '10802949',    // LA CONTRASEÑA DE TU POSTGRES
-    port: 5432,                 // El puerto por defecto
+    connectionString: connectionString,
+    ssl: {
+        rejectUnauthorized: false // Esto es VITAL para que Supabase no rechace la conexión
+    }
 });
 
 // Prueba de conexión rápida
 pool.query('SELECT NOW()', (err, res) => {
     if (err) {
-        console.error(' Error conectando a la DB:', err.stack);
+        console.error(' Error conectando a la DB:', err.message);
     } else {
-        console.log(' Conexión a la base de datos exitosa');
+        console.log(' ¡Conexión exitosa a Supabase desde la nube!');
     }
 });
 
