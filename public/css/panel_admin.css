@@ -1,0 +1,442 @@
+/* =========================================
+   1. VARIABLES Y BASE
+   ========================================= */
+:root {
+    --bg: #08090a;
+    --sidebar: #000000;
+    --card: #121415;
+    --accent: #a2ff86;
+    --gold: #d4af37;
+    --danger: #ff5e5e;
+    --info: #3a86ff;
+    --text-muted: #808080;
+    --border: rgba(162, 255, 134, 0.1);
+}
+
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    /* Optimización: Evita que el navegador calcule estilos extra */
+    -webkit-tap-highlight-color: transparent;
+}
+
+body { 
+    background: var(--bg); 
+    color: white; 
+    font-family: 'Poppins', sans-serif; 
+    display: flex; 
+    min-height: 100vh;
+    /* Mejora de scroll en móvil */
+    overflow-x: hidden;
+}
+
+/* Título para celular */
+.mobile-header {
+    display: none;
+    width: 100%;
+    padding: 20px;
+    background: var(--sidebar);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 110;
+}
+
+.mobile-header h2 {
+    color: var(--accent);
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+}
+
+/* =========================================
+   2. SIDEBAR (Navegación PC)
+   ========================================= */
+.sidebar {
+    width: 280px; 
+    height: 100vh; 
+    background: var(--sidebar);
+    position: fixed; 
+    border-right: 1px solid var(--border);
+    display: flex; 
+    flex-direction: column; 
+    padding: 40px 25px; 
+    z-index: 100;
+    transition: transform 0.3s ease; /* Optimizado: solo transform */
+}
+
+.sidebar-brand { 
+    color: var(--accent); 
+    font-weight: 900; 
+    letter-spacing: 3px; 
+    margin-bottom: 50px; 
+    text-align: center; 
+}
+
+.nav-menu { list-style: none; }
+.nav-item { margin-bottom: 10px; }
+
+.nav-link {
+    color: var(--text-muted); 
+    text-decoration: none; 
+    display: flex; 
+    align-items: center;
+    gap: 15px; 
+    padding: 12px 15px; 
+    border-radius: 12px; 
+    transition: 0.2s;
+}
+
+.nav-link:hover, .nav-link.active { 
+    background: rgba(162, 255, 134, 0.05); 
+    color: var(--accent); 
+}
+
+.logout { 
+    margin-top: auto; 
+    color: var(--danger); 
+    border: 1px solid var(--danger); 
+    text-align: center; 
+    padding: 12px; 
+    border-radius: 10px; 
+    text-decoration: none; 
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+
+.logout:hover { background: var(--danger); color: white; }
+
+/* =========================================
+   3. CONTENIDO PRINCIPAL (MAIN)
+   ========================================= */
+.main { 
+    margin-left: 280px; 
+    width: calc(100% - 280px); 
+    padding: 50px; 
+    will-change: transform; /* Ayuda al navegador a preparar la renderización */
+}
+
+.stats-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 20px; 
+    margin-bottom: 40px; 
+}
+
+.stat-card { 
+    background: var(--card); 
+    padding: 20px; 
+    border-radius: 15px; 
+    border: 1px solid var(--border); 
+}
+
+.stat-card h3 { 
+    font-size: 0.7rem; 
+    color: var(--text-muted); 
+    text-transform: uppercase; 
+}
+
+.stat-card .value { 
+    font-size: 1.5rem; 
+    font-weight: 600; 
+    margin-top: 5px; 
+    color: var(--gold); 
+}
+
+.grid-sections { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+
+.content-box { 
+    background: var(--card); 
+    border-radius: 20px; 
+    padding: 25px; 
+    border: 1px solid var(--border); 
+}
+
+.box-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 25px; 
+}
+
+.table-wrapper { 
+    overflow-x: auto; 
+    border-radius: 10px;
+    /* Scroll suave en iOS */
+    -webkit-overflow-scrolling: touch;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+th { 
+    position: sticky; 
+    top: 0; 
+    background: var(--card); 
+    text-align: left; 
+    color: var(--text-muted); 
+    padding: 12px 15px; 
+    border-bottom: 2px solid var(--border); 
+    font-size: 0.75rem;
+    z-index: 10;
+}
+
+td { 
+    padding: 14px 15px; 
+    border-bottom: 1px solid rgba(255,255,255,0.03); 
+    font-size: 0.85rem; 
+    vertical-align: middle;
+}
+
+.img-preview { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; }
+
+.btn-primary { 
+    background: var(--accent); 
+    color: black; 
+    border: none; 
+    padding: 10px 20px; 
+    border-radius: 8px; 
+    font-weight: 600; 
+    cursor: pointer; 
+}
+
+.btn-edit { background: #3498db; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; margin-right: 5px; }
+.btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 5px; }
+
+/* =========================================
+   4. MODALES (OPTIMIZADOS)
+   ========================================= */
+.modal-overlay { 
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.85); /* Menos transparencia para mejor rendimiento */
+    z-index: 1000; 
+    align-items: center; 
+    justify-content: center; 
+    padding: 20px; 
+}
+
+.modal-card { 
+    background: var(--card); 
+    width: 100%; 
+    max-width: 500px; 
+    padding: 30px; 
+    border-radius: 20px; 
+    border: 1px solid var(--accent); 
+    position: relative;
+    /* Animación simplificada para fluidez */
+    animation: modalIn 0.2s ease-out;
+}
+
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.close-btn { 
+    position: absolute; 
+    top: 15px; 
+    right: 15px; 
+    width: 35px;
+    height: 35px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 10px;
+    color: white !important;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* =========================================
+   5. RESPONSIVE Y MEJORAS MÓVIL
+   ========================================= */
+
+@media (max-width: 1024px) {
+    .sidebar { width: 80px; padding: 40px 10px; }
+    .sidebar-brand, .nav-link span, .logout span { display: none; }
+    .nav-link, .logout { justify-content: center; padding: 15px 0; }
+    .main { margin-left: 80px; width: calc(100% - 80px); padding: 30px; }
+}
+
+@media (max-width: 768px) {
+    .grid-sections { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 500px) {
+    body { flex-direction: column; }
+    .mobile-header { display: block; }
+
+    .sidebar { 
+        position: fixed; 
+        bottom: 0; 
+        top: auto; 
+        width: 100%; 
+        height: 70px; 
+        flex-direction: row; 
+        padding: 0; 
+        border-right: none; 
+        border-top: 1px solid var(--border);
+        justify-content: space-around; 
+        align-items: center;
+        background: #000; /* Quité el blur para que no laguee el scroll */
+    }
+
+    .main { 
+        margin-left: 0; 
+        width: 100%; 
+        padding: 15px; 
+        padding-top: 20px; 
+        padding-bottom: 90px; 
+    }
+
+    /* Tabla más legible en pantallas chicas */
+    td, th { padding: 12px 8px; font-size: 0.75rem; }
+    
+    .form-control {
+        font-size: 16px !important; /* Evita zoom automático en iPhone */
+    }
+
+    .modal-card form div[style*="display:flex"] {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .close-btn {
+        background: var(--danger);
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* --- FORM CONTROL --- */
+.form-group label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+}
+
+.form-control {
+    width: 100%;
+    background: #1a1d1e;
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 10px;
+    color: white;
+    outline: none;
+}
+
+/* --- TOASTS --- */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+}
+
+.toast {
+    background: #2ecc71;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+/* --- CORRECCIÓN PARA BARRA MÓVIL --- */
+@media (max-width: 500px) {
+    body { flex-direction: column; }
+    
+    .mobile-header { display: block; }
+
+    .sidebar { 
+        position: fixed; 
+        bottom: 0; 
+        top: auto; 
+        width: 100%; 
+        height: 65px; /* Altura fija para la barra */
+        flex-direction: row; 
+        padding: 0 10px; 
+        border-right: none; 
+        border-top: 1px solid var(--border);
+        justify-content: space-between; 
+        align-items: center;
+        background: #000;
+        z-index: 1000;
+    }
+
+    .sidebar-brand { display: none; }
+
+    /* Ajuste para que el menú de iconos ocupe el centro */
+    .nav-menu { 
+        display: flex; 
+        flex: 1; 
+        justify-content: space-around; 
+        align-items: center;
+        margin-bottom: 0;
+    }
+
+    .nav-item { margin-bottom: 0; }
+    
+    .nav-link {
+        padding: 10px;
+        font-size: 1.2rem; /* Iconos un poco más grandes */
+    }
+
+    /* CORRECCIÓN DEL BOTÓN ROJO ESTIRADO */
+    .logout { 
+        margin-top: 0; 
+        border: none; 
+        font-size: 1.2rem; 
+        display: flex; 
+        align-items: center;
+        justify-content: center;
+        color: var(--danger);
+        width: 50px;  /* Ancho fijo para que no se deforme */
+        height: 50px; /* Alto fijo para que sea un círculo o cuadrado */
+        padding: 0;
+    }
+
+    .main { 
+        margin-left: 0; 
+        width: 100%; 
+        padding: 15px; 
+        padding-top: 20px; 
+        padding-bottom: 80px; /* Espacio para que la barra no tape el contenido */
+    }
+}
+.dot-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: 0.3s;
+    display: inline-block;
+    margin: 0 5px;
+}
+.dot-img.active {
+    border-color: #d4af37; /* Color oro */
+    transform: scale(1.2);
+}
+.card-input {
+    background: #1a1a1a;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 4px;
+    width: 100%;
+}
+.footer-brand-name span {
+    color: var(--accent-green);
+    font-family: 'Great Vibes', cursive;
+    text-transform: capitalize;
+    font-size: 1.5em;
+}

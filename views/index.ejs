@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Florería Margarita | Diseño Floral de Lujo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/dist/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="/css/pagina_principal.css">
+</head>
+<body>
+
+<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 1000000;"></div>
+
+<div id="cartSidebar" class="cart-sidebar-luxury">
+    <div class="cart-header">
+        <div>
+            <h2>Boutique</h2>
+            <small style="color: var(--accent-green); letter-spacing: 2px; text-transform: uppercase;">Selección de Lujo</small>
+        </div>
+        <button onclick="toggleCart()" class="close-cart-btn">×</button>
+    </div>
+    <div id="cart-list-items" class="cart-body"></div>
+    <div class="cart-footer">
+        <div class="total-row">
+            <span class="total-label">Subtotal</span>
+            <span id="cart-total" class="total-amount">0.00 Bs</span>
+        </div>
+        <button class="btn-checkout" onclick="procesarCompra()">FINALIZAR PEDIDO</button>
+        <p class="delivery-note">ENTREGA EXCLUSIVA EN TRINIDAD</p>
+    </div>
+</div>
+
+<nav class="navbar">
+    <div class="logo">FLORERÍA MARGARITA</div>
+    <div class="nav-content" id="nav-content">
+        <div class="nav-links">
+            <a href="/">Inicio</a>
+            <a href="#catalogo">Catálogo</a>
+            <a href="#">Contacto</a>
+        </div>
+        <div class="cart-btn" onclick="toggleCart()" style="position: relative; cursor: pointer; margin-right: 15px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2">
+                <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <span id="cart-count" style="position: absolute; top: -10px; right: -12px; background: white; color: black; font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 50%; border: 1px solid black;">0</span>
+        </div>
+        
+        <div class="account-mobile-wrapper">
+            <% if (user) { %>
+                <button class="btn-account" id="userBtn" style="border-color: var(--accent-green); color: var(--accent-green);">
+                    <i class="fas fa-user-circle"></i> <%= user.nombre.toUpperCase() %>
+                </button>
+                <div class="dropdown-menu" id="userMenu">
+                    <a href="#"><i class="fas fa-shopping-bag"></i> Mis Pedidos</a>
+                    <a href="/logout" style="color: #ff5555;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                    <hr style="border: 0.5px solid #333; margin: 5px 0;">
+                    <a href="#" id="link-admin" style="color: var(--gold); font-size: 0.7rem; opacity: 0.7;"><i class="fas fa-shield-halved"></i> Modo Admin</a>
+                </div>
+            <% } else { %>
+                <button class="btn-account" id="userBtn">MI CUENTA</button>
+                <div class="dropdown-menu" id="userMenu">
+                    <a href="#" id="link-login"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
+                    <a href="#" id="link-registro"><i class="fas fa-user-plus"></i> Crear Cuenta</a>
+                    <a href="#" id="link-admin" style="color: var(--gold);"><i class="fas fa-shield-halved"></i> Modo Admin</a>
+                </div>
+            <% } %>
+        </div>
+    </div>
+    <div class="menu-toggle" id="mobile-menu">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="slide active" style="background-image: url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2000');">
+        <div class="hero-content">
+            <span style="color: var(--accent-green); letter-spacing: 3px; text-transform: uppercase; font-size: 0.8rem;">Colección Luxury</span>
+            <h1 style="color: white;">Diseño Floral <br> de Autor</h1>
+        </div>
+    </div>
+    <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1523438885200-e635ba2c371e?q=80&w=2000');">
+        <div class="hero-content">
+            <span style="color: var(--accent-green); letter-spacing: 3px; text-transform: uppercase; font-size: 0.8rem;">Exclusividad</span>
+            <h1 style="color: white;">Elegancia en <br> cada Pétalo</h1>
+        </div>
+    </div>
+</section>
+
+<div class="container" id="catalogo">
+    <header class="section-header">
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 2.5rem;">Nuestra Vitrina</h2>
+        <div class="filter-container">
+            <button class="filter-btn active" onclick="filtrarCategoria('todas', this)">Todas</button>
+            <% if (typeof categorias !== 'undefined' && categorias.length > 0) { %>
+                <% categorias.forEach(cat => { %>
+                    <button class="filter-btn" onclick="filtrarCategoria('<%= cat.nombre.toLowerCase() %>', this)">
+                        <%= cat.nombre %>
+                    </button>
+                <% }) %>
+            <% } %>
+        </div>
+    </header>
+
+    <div class="product-grid" id="productGrid">
+        <% if (typeof productos !== 'undefined' && productos.length > 0) { %>
+            <% productos.forEach(p => { %>
+                <div class="product-card" data-category="<%= p.categoria ? p.categoria.toLowerCase() : '' %>">
+                    <div class="product-img"><img src="<%= p.imagen_url %>" alt="<%= p.nombre %>"></div>
+                    <div class="product-info">
+                        <h3><%= p.nombre %></h3>
+                        <p class="product-price"><%= p.precio %> Bs</p>
+                        <button class="btn-add" onclick="notificarAñadido('<%= p.nombre %>')" data-id="<%= p.id %>" data-nombre="<%= p.nombre %>" data-precio="<%= p.precio %>" data-imagen="<%= p.imagen_url %>">
+                            Añadir al carrito
+                        </button>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <div class="empty-msg"><p>Cargando productos...</p></div>
+        <% } %>
+    </div>
+</div>
+
+<div id="paymentModal" class="auth-overlay" style="display:none;">
+    <div class="form-card" style="max-width: 450px; text-align: center; position: relative;">
+        <button onclick="closePayment()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">×</button>
+        
+        <h2 style="font-family:'Playfair Display'; color: var(--accent-green); margin-bottom: 5px;">Finalizar Pago</h2>
+        <p style="font-size: 0.9rem; color: #ccc; margin-bottom: 20px;">Escanea el QR para realizar la transferencia</p>
+
+        <div id="qr-container" class="qr-zoom-container" onclick="toggleQRZoom()" style="background: white; padding: 10px; border-radius: 12px; display: inline-block; margin: 10px 0;">
+            <img src="/img/qr_banco.jpeg" alt="QR" style="width: 180px; height: 180px; display: block;">
+        </div>
+
+        <div>
+            <a href="/img/qr_banco.jpeg" download="QR_Margarita.jpeg" class="btn-descargar" style="font-size: 0.8rem; text-decoration: none; color: var(--accent-green);">
+                <i class="fas fa-download"></i> Descargar QR
+            </a>
+        </div>
+
+        <div class="datos-transferencia" style="margin-top: 15px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+            <p>Titular: <strong>MARGARITA TORRICO P.</strong></p>
+            <p>Cuenta: <strong>140826395</strong></p>
+            <p>Banco: <strong>Banco Unión S.A.</strong></p>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <p style="font-size: 0.8rem; opacity: 0.6; margin:0;">Monto Total a Transferir:</p>
+            <span id="modal-total-amount" style="color: var(--accent-green); font-size: 1.8rem; font-weight: 900;">0.00 Bs</span>
+        </div>
+
+        <button onclick="confirmarYEnviar()" class="btn-modal" style="background: #25D366; color: white; border: none; width: 100%; padding: 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            <i class="fab fa-whatsapp"></i> ENVIAR COMPROBANTE
+        </button>
+    </div>
+</div>
+
+<div id="authModal" class="auth-overlay" style="display:none;">
+    <div class="form-card">
+        <button onclick="closeAuth()" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">×</button>
+        <div id="form-login" class="auth-form-content">
+            <h2 style="text-align:center; font-family:'Playfair Display';">Bienvenido</h2>
+            <form action="/login" method="POST">
+                <input type="email" name="email" placeholder="Correo" class="modal-input" required>
+                <input type="password" name="password" placeholder="Contraseña" class="modal-input" required>
+                <button type="submit" class="btn-modal">Entrar</button>
+            </form>
+            <p style="text-align:center; font-size:0.8rem; margin-top:15px;">¿No tienes cuenta? <span onclick="openForm('registro')" style="color:var(--accent-green); cursor:pointer;">Regístrate</span></p>
+        </div>
+        <div id="form-registro" class="auth-form-content" style="display:none;">
+            <h2 style="text-align:center; font-family:'Playfair Display';">Crear Cuenta</h2>
+            <form action="/registro" method="POST">
+                <input type="text" name="nombre" placeholder="Nombre" class="modal-input" required>
+                <input type="email" name="email" placeholder="Correo" class="modal-input" required>
+                <input type="password" name="password" placeholder="Contraseña" class="modal-input" required>
+                <button type="submit" class="btn-modal">Registrarse</button>
+            </form>
+        </div>
+        <div id="form-admin" class="auth-form-content" style="display:none;">
+            <h2 style="text-align:center; color:var(--gold);">Admin Access</h2>
+            <form action="/admin/dashboard-login" method="POST">
+                <input type="text" name="adminUser" id="adminUserField" placeholder="Usuario" class="modal-input" required>
+                <input type="password" name="adminPass" placeholder="Clave" class="modal-input" required>
+                <button type="submit" class="btn-modal" style="background:var(--gold);">Acceder</button>
+            </form>
+            <div style="text-align: center; margin-top: 15px;">
+                <p style="color: #666; font-size: 0.7rem; margin-bottom: 10px;">— O ACCESO BIOMÉTRICO —</p>
+                <button type="button" onclick="loginConHuella()" style="background: transparent; color: var(--gold); border: 1px solid var(--gold); width: 100%; padding: 10px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
+                    <i class="fas fa-fingerprint"></i> Entrar con Huella
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="ultra-footer">
+    <div class="footer-top-glow"></div>
+    <div class="footer-main-wrapper">
+        <div class="footer-content-grid">
+            <div class="footer-block brand-block">
+                <h2 class="footer-brand-name">FLORERÍA <span>MARGARITA</span></h2>
+                <div class="philosophy-box">
+                    <div class="phi-item">
+                        <span class="phi-label">NUESTRA MISIÓN</span>
+                        <p>Transformar momentos cotidianos en recuerdos eternos mediante el arte floral de alta gama.</p>
+                    </div>
+                    <div class="phi-item">
+                        <span class="phi-label">NUESTRA VISIÓN</span>
+                        <p>Ser el símbolo máximo de elegancia y distinción floral en toda Bolivia para el 2030.</p>
+                    </div>
+                </div>
+                <div class="social-mega-box">
+                    <a href="#" class="social-btn"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://wa.me/59176515818" class="social-btn"><i class="fa-brands fa-whatsapp"></i></a>
+                </div>
+            </div>
+            <div class="footer-block links-block">
+                <h3 class="block-title">MAPA DEL SITIO</h3>
+                <ul class="mega-links">
+                    <li><a href="/"><i class="fa-solid fa-leaf"></i> Inicio</a></li>
+                    <li><a href="#catalogo"><i class="fa-solid fa-leaf"></i> Colecciones Exclusivas</a></li>
+                    <li><a href="#"><i class="fa-solid fa-leaf"></i> Políticas de Envío</a></li>
+                    <li><a href="#"><i class="fa-solid fa-leaf"></i> Preguntas Frecuentes</a></li>
+                    <li><a href="#" class="admin-access" onclick="openForm('admin')"><i class="fa-solid fa-shield-halved"></i> Acceso Staff</a></li>
+                </ul>
+            </div>
+            <div class="footer-block contact-block">
+                <h3 class="block-title">CENTRO DE ATENCIÓN</h3>
+                <div class="contact-card">
+                    <div class="c-info">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <p>Trinidad, Beni - Bolivia</p>
+                    </div>
+                    <div class="c-info">
+                        <i class="fa-solid fa-phone-volume"></i>
+                        <p>+591 76515818</p>
+                    </div>
+                    <div class="c-info">
+                        <i class="fa-solid fa-clock"></i>
+                        <p>08:00 AM - 08:00 PM</p>
+                    </div>
+                </div>
+                <div class="map-frame">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3876.54!2d-64.9!3d-14.8!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDQ4JzAwLjAiUyA2NMKwNTQnMDAuMCJX!5e0!3m2!1ses!2sbo!4v1620000000000!5m2!1ses!2sbo" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom-signature">
+            <div class="signature-container">
+                <div class="copy-box">
+                    <p>© 2026 <span class="highlight">Florería Margarita</span> | Todos los Derechos Reservados</p>
+                </div>
+                <div class="legal-box">
+                    <a href="#">Privacidad</a>
+                    <a href="#">Términos</a>
+                </div>
+                <div class="dev-box">
+                    <p class="dev-text">Desarrollado y Diseñado por <a href="https://wa.me/59178745666" target="_blank" class="noel-signature">Noel Paco</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="/js/carrito.js"></script>
+
+<script>
+/* --- LÓGICA DE NOTIFICACIONES DINÁMICAS --- */
+window.onload = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    const userName = "<%= user ? user.nombre : '' %>";
+
+    // Diccionario de mensajes
+    const mensajes = {
+        'success_login': { txt: `¡Bienvenido de nuevo, ${userName.toUpperCase()}!`, icon: "fa-user-circle" },
+        'success_registro': { txt: "¡Cuenta creada con éxito! Ya puedes iniciar sesión.", icon: "fa-check-double" },
+        'error_auth': { txt: "Credenciales incorrectas. Intenta de nuevo.", icon: "fa-exclamation-triangle" },
+        'error_registro': { txt: "El correo ya está registrado o hubo un error.", icon: "fa-user-times" },
+        'welcome': { txt: "Acceso Administrativo Concedido.", icon: "fa-shield-check" }
+    };
+
+    if (mensajes[status]) {
+        notificarToast(mensajes[status].txt, mensajes[status].icon);
+        // Limpiar URL sin recargar
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+};
+
+    /* --- FUNCIÓN AUXILIAR PARA TOASTS --- */
+    function notificarToast(mensaje, icono) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.innerHTML = `<i class="fas ${icono}" style="color:var(--accent-green)"></i> ${mensaje}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 500);
+        }, 3500);
+    }
+
+    /* --- LÓGICA DE FILTRADO --- */
+    function filtrarCategoria(cat, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const productos = document.querySelectorAll('.product-card');
+        productos.forEach(p => {
+            const categoriaProducto = p.getAttribute('data-category');
+            p.style.display = (cat === 'todas' || categoriaProducto === cat) ? 'block' : 'none';
+        });
+    }
+
+    /* --- LÓGICA DE COMPRA Y QR --- */
+    function toggleQRZoom() {
+        document.getElementById('qr-container').classList.toggle('active');
+    }
+
+    /* --- PROCESAR COMPRA --- */
+function procesarCompra() {
+    if (typeof carrito === 'undefined' || carrito.length === 0) {
+        alert("Tu carrito está vacío.");
+        return;
+    }
+
+    const total = document.getElementById('cart-total').innerText;
+    document.getElementById('modal-total-amount').innerText = total;
+    
+    document.getElementById('paymentModal').style.display = 'flex';
+    document.getElementById('cartSidebar').classList.remove('active');
+}
+
+/* --- ENVIAR A WHATSAPP --- */
+function confirmarYEnviar() {
+    if (typeof carrito === 'undefined' || carrito.length === 0) return;
+
+    const total = document.getElementById('modal-total-amount').innerText;
+    
+    let productosTexto = "";
+    carrito.forEach(item => {
+        productosTexto += `%0A- *${item.nombre}* (x${item.cantidad})`;
+    });
+
+    // Mensaje corregido sin mención a la tarjeta
+    const mensaje = `Hola *Florería Margarita*, realicé un pedido desde la web:%0A${productosTexto}%0A%0A*Total a pagar:* ${total}%0A%0AEn breve enviaré el comprobante de pago para procesar mi envío. ¡Gracias!.`;
+    
+    // 1. Abrimos WhatsApp
+    window.open(`https://wa.me/59176515818?text=${mensaje}`, '_blank');
+    
+    // 2. Vaciamos el carrito
+    carrito = []; 
+
+    // 3. Actualizamos la visualización
+    if(typeof actualizarCarritoUI === 'function') {
+        actualizarCarritoUI();
+    }
+    
+    // 4. Cerramos el modal de pago
+    closePayment();
+}
+
+    function notificarAñadido(nombre) {
+        notificarToast(`¡${nombre} añadido!`, "fa-shopping-basket");
+    }
+
+    /* --- CONTROL DE SLIDESHOW SEGURO --- */
+if (window.miIntervaloSlides) {
+    clearInterval(window.miIntervaloSlides);
+}
+
+const slides = document.querySelectorAll('.slide');
+
+if (slides.length > 0) {
+    let currentIdx = 0;
+    
+    window.miIntervaloSlides = setInterval(() => {
+        if (slides[currentIdx]) {
+            slides[currentIdx].classList.remove('active');
+            currentIdx = (currentIdx + 1) % slides.length;
+            if (slides[currentIdx]) {
+                slides[currentIdx].classList.add('active');
+            }
+        }
+    }, 5000);
+}
+
+    const mobileMenu = document.getElementById('mobile-menu');
+    const navContent = document.getElementById('nav-content');
+    mobileMenu.onclick = (e) => { e.stopPropagation(); navContent.classList.toggle('active'); };
+
+    const userBtn = document.getElementById('userBtn');
+    const userMenu = document.getElementById('userMenu');
+    userBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        userMenu.classList.toggle('active'); 
+    };
+    
+    document.onclick = (e) => {
+        if (!userMenu.contains(e.target) && e.target !== userBtn) userMenu.classList.remove('active');
+        if (!navContent.contains(e.target) && e.target !== mobileMenu) navContent.classList.remove('active');
+    };
+
+    function openForm(type) {
+        document.getElementById('authModal').style.display = 'flex';
+        document.querySelectorAll('.auth-form-content').forEach(f => f.style.display = 'none');
+        document.getElementById('form-' + type).style.display = 'block';
+    }
+    function closeAuth() { document.getElementById('authModal').style.display = 'none'; }
+    function closePayment() { 
+        document.getElementById('paymentModal').style.display = 'none'; 
+    }
+    function toggleCart() { document.getElementById('cartSidebar').classList.toggle('active'); }
+
+    if(document.getElementById('link-login')) document.getElementById('link-login').onclick = (e) => { e.preventDefault(); openForm('login'); };
+    if(document.getElementById('link-registro')) document.getElementById('link-registro').onclick = (e) => { e.preventDefault(); openForm('registro'); };
+    
+    document.querySelectorAll('#link-admin').forEach(link => {
+        link.onclick = (e) => { e.preventDefault(); openForm('admin'); };
+    });
+
+    /* --- FUNCIÓN PARA LOGIN CON HUELLA (WEBAUTHN) --- */
+    async function loginConHuella() {
+        const email = document.getElementById('adminUserField').value;
+        if (!email) {
+            alert("Ingresa tu usuario administrador primero.");
+            return;
+        }
+
+        try {
+            const resp = await fetch('/admin/webauthn-login-options', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            
+            const options = await resp.json();
+            if (options.error) throw new Error(options.error);
+
+            options.challenge = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+            if (options.allowCredentials) {
+                options.allowCredentials.forEach(cred => {
+                    cred.id = Uint8Array.from(atob(cred.id.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+                });
+            }
+
+            const assertion = await navigator.credentials.get({ publicKey: options });
+
+            const loginResp = await fetch('/admin/webauthn-login-verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    body: {
+                        id: assertion.id,
+                        rawId: btoa(String.fromCharCode(...new Uint8Array(assertion.rawId))),
+                        type: assertion.type,
+                        response: {
+                            authenticatorData: btoa(String.fromCharCode(...new Uint8Array(assertion.response.authenticatorData))),
+                            clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(assertion.response.clientDataJSON))),
+                            signature: btoa(String.fromCharCode(...new Uint8Array(assertion.response.signature))),
+                            userHandle: assertion.response.userHandle ? btoa(String.fromCharCode(...new Uint8Array(assertion.response.userHandle))) : null,
+                        }
+                    }
+                })
+            });
+
+            const result = await loginResp.json();
+            if (result.success) {
+                window.location.href = '/admin?status=welcome';
+            } else {
+                alert("Huella no válida.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error en autenticación biométrica.");
+        }
+    }
+</script>
+</body>
+</html>

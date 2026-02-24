@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Elite Admin | Florería Margarita</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/panel_admin.css">
+    <style>
+        /* Estilos críticos e hidratación visual */
+        :root {
+            --primary-gold: #d4af37;
+            --dark-bg: #1a1a1a;
+            --border: #333;
+            --danger: #ff4d4d;
+        }
+
+        .text-danger-bold { color: var(--danger) !important; font-weight: bold; }
+        .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+        .gold-text { color: var(--primary-gold); }
+        
+        .btn-edit { background: #3498db; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; transition: 0.2s; margin-right: 5px; }
+        .btn-edit:hover { background: #2980b9; transform: scale(1.05); }
+
+        tr { transition: all 0.3s ease; }
+        .search-bar input:focus { outline: none; border-color: var(--primary-gold) !important; box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
+
+        .btn-huella {
+            background: #111;
+            color: var(--primary-gold);
+            border: 1px solid var(--primary-gold);
+            padding: 12px;
+            border-radius: 8px;
+            width: calc(100% - 40px);
+            margin: 10px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: 0.3s;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+        }
+        .btn-huella:hover { background: var(--primary-gold); color: black; }
+
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .toast { background: #333; color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary-gold); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-header">
+        <h2>SYSTEM MARGARITA</h2>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <aside class="sidebar">
+        <h2 class="sidebar-brand">SYSTEM MARGARITA</h2>
+        
+        <nav class="nav-menu">
+            <li class="nav-item">
+                <a href="/admin" class="nav-link active"><i class="fas fa-th-large"></i> <span>Dashboard</span></a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link"><i class="fas fa-shopping-cart"></i> <span>Pedidos</span></a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link"><i class="fas fa-users"></i> <span>Usuarios</span></a>
+            </li>
+        </nav>
+
+        <button class="btn-huella" onclick="registrarHuella()">
+            <i class="fas fa-fingerprint"></i> <span>Vincular Huella</span>
+        </button>
+
+        <a href="/logout" class="logout">
+            <i class="fas fa-sign-out-alt"></i> <span>Cerrar Sesión</span>
+        </a>
+    </aside>
+
+    <main class="main">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Ventas Totales</h3>
+                <div class="value"><%= pedidos.reduce((acc, p) => acc + (parseFloat(p.total) || 0), 0).toLocaleString() %> Bs</div>
+            </div>
+            <div class="stat-card">
+                <h3>Productos</h3>
+                <div class="value" id="prod-count"><%= productos.length %></div>
+            </div>
+            <div class="stat-card">
+                <h3>Stock Valorizado</h3>
+                <div class="value"><%= productos.reduce((acc, p) => acc + (Number(p.precio || 0) * Number(p.stock || 0)), 0).toLocaleString() %> Bs</div>
+            </div>
+            <div class="stat-card">
+                <h3>Categorías</h3>
+                <div class="value" id="cat-count"><%= categorias.length %></div>
+            </div>
+        </div>
+
+        <div class="grid-sections">
+            <section class="content-box inventory-section">
+                <div class="box-header" style="display: flex; align-items: center; gap: 15px;">
+                    <h2>Inventario</h2>
+                    <div class="search-bar" style="flex: 1; position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--primary-gold);"></i>
+                        <input type="text" id="search-input" placeholder="Buscar producto..." style="width: 100%; padding: 10px 10px 10px 35px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 16px;">
+                    </div>
+                    <button class="btn-primary" onclick="openModal('modalProd')">+ Nuevo</button>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Nombre</th>
+                                <th>Stock</th>
+                                <th>Precio</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-table-body">
+                            <% productos.forEach(p => { %>
+                            <tr id="row-prod-<%= p.id %>">
+                                <td><img src="<%= p.imagen_url %>" class="img-preview" loading="lazy"></td>
+                                <td><strong><%= p.nombre %></strong><br><small class="gold-text"><%= p.categoria %></small></td>
+                                <td class="stock-cell <%= p.stock <= 5 ? 'text-danger-bold' : '' %>">
+                                    <span class="stock-val"><%= p.stock %></span>
+                                    <% if(p.stock <= 5) { %> <i class="fas fa-exclamation-triangle"></i> <% } %>
+                                </td>
+                                <td><%= p.precio %> Bs</td>
+                                <td>
+                                    <button class="btn-edit" onclick="prepararEdicion('<%= p.id %>', '<%= p.nombre %>', '<%= p.precio %>', '<%= p.stock %>', '<%= p.categoria_id %>')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn-del" onclick="abrirConfirmar('/admin/eliminar/<%= p.id %>', 'Producto eliminado', 'row-prod-<%= p.id %>', 'prod-count')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="content-box cat-section">
+                <div class="box-header">
+                    <h2>Categorías</h2>
+                    <button class="btn-primary" onclick="openModal('modalCat')">+</button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th style="text-align: right;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="category-table-body">
+                            <% categorias.forEach(c => { %>
+                            <tr id="row-cat-<%= c.id %>">
+                                <td><%= c.nombre %></td>
+                                <td style="text-align: right;">
+                                    <button class="btn-del" onclick="abrirConfirmar('/admin/eliminar-categoria/<%= c.id %>', 'Categoría eliminada', 'row-cat-<%= c.id %>', 'cat-count')"><i class="fas fa-times"></i></button>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="modalEditar">
+        <div class="modal-card">
+            <button type="button" class="close-btn" onclick="closeModal('modalEditar')">&times;</button>
+            <h2 style="margin-bottom:20px">Editar Producto</h2>
+            <form id="formEditarFlor" action="/admin/editar-flor" method="POST" enctype="multipart/form-data" onsubmit="return handleFormSubmit(event, this, 'Producto actualizado')">
+                <input type="hidden" name="id" id="edit-id">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="nombre" id="edit-nombre" class="form-control" required>
+                </div>
+                <div style="display:flex; gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Precio (Bs)</label>
+                        <input type="number" name="precio" id="edit-precio" step="0.01" class="form-control" required>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Stock</label>
+                        <input type="number" name="stock" id="edit-stock" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select name="categoria_id" id="edit-categoria" class="form-control">
+                        <% categorias.forEach(c => { %>
+                            <option value="<%= c.id %>"><%= c.nombre %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cambiar Imagen (opcional)</label>
+                    <input type="file" name="imagen" class="form-control" accept="image/*">
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%; padding: 14px;">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalConfirmar">
+        <div class="modal-card" style="max-width: 350px; text-align: center;">
+            <h2 style="margin-bottom:15px">¿Eliminar registro?</h2>
+            <p style="color: #888; font-size: 0.9rem; margin-bottom: 25px;">Esta acción no se puede deshacer.</p>
+            <div style="display:flex; gap:10px">
+                <button type="button" class="btn-primary" style="flex:1; background: #222; color:white" onclick="closeModal('modalConfirmar')">No, volver</button>
+                <form id="formConfirmarBorrado" method="POST" style="flex:1">
+                    <button type="submit" class="btn-primary" style="width:100%; background: var(--danger)">Sí, eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalCat">
+        <div class="modal-card">
+            <button type="button" class="close-btn" onclick="closeModal('modalCat')">&times;</button>
+            <h2 style="margin-bottom:20px">Nueva Categoría</h2>
+            <form action="/admin/agregar-categoria" method="POST" onsubmit="return handleFormSubmit(event, this, 'Categoría creada')">
+                <div class="form-group">
+                    <label>Nombre de la Categoría</label>
+                    <input type="text" name="nombre" class="form-control" placeholder="Ej: Ramos de Novia" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%; padding: 14px;">Crear Categoría</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalProd">
+        <div class="modal-card">
+            <button type="button" class="close-btn" onclick="closeModal('modalProd')">&times;</button>
+            <h2 style="margin-bottom:20px">Nueva Flor</h2>
+            <form action="/admin/agregar-flor" id="formNuevaFlor" method="POST" enctype="multipart/form-data" onsubmit="return handleFormSubmit(event, this, 'Producto guardado')">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="nombre" class="form-control" required>
+                </div>
+                <div style="display:flex; gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Precio (Bs)</label>
+                        <input type="number" name="precio" step="0.01" class="form-control" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Stock</label>
+                        <input type="number" name="stock" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select name="categoria_id" class="form-control">
+                        <% categorias.forEach(c => { %>
+                            <option value="<%= c.id %>"><%= c.nombre %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Imagen</label>
+                    <input type="file" name="imagen" id="inputImagen" class="form-control" accept="image/*">
+                    <img id="preview-img" alt="Vista previa" style="width:100px; height:100px; object-fit:cover; margin-top:10px; border-radius:8px; display:none; border: 1px solid var(--primary-gold)">
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%; padding: 14px;">Publicar</button>
+            </form>
+        </div>
+    </div>
+
+<script>
+    /* --- UTILIDADES WEBAUTHN --- */
+    function bufferDecode(value) {
+        return Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    }
+
+    function bufferEncode(value) {
+        return btoa(String.fromCharCode.apply(null, new Uint8Array(value)))
+            .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    }
+
+    async function registrarHuella() {
+        try {
+            showToast("Iniciando sensor...");
+            const resp = await fetch('/admin/webauthn-register-options');
+            if (!resp.ok) throw new Error("Error de servidor");
+            
+            const options = await resp.json();
+            options.challenge = bufferDecode(options.challenge);
+            options.user.id = bufferDecode(options.user.id);
+            if (options.excludeCredentials) {
+                options.excludeCredentials.forEach(c => c.id = bufferDecode(c.id));
+            }
+
+            const credential = await navigator.credentials.create({ publicKey: options });
+
+            const credentialForServer = {
+                id: credential.id,
+                rawId: bufferEncode(credential.rawId),
+                type: credential.type,
+                response: {
+                    attestationObject: bufferEncode(credential.response.attestationObject),
+                    clientDataJSON: bufferEncode(credential.response.clientDataJSON),
+                }
+            };
+
+            const verifResp = await fetch('/admin/webauthn-verify-register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(credentialForServer)
+            });
+
+            const result = await verifResp.json();
+            if (result.success) showToast("✅ Huella vinculada");
+            else showToast("❌ Error: " + result.error);
+
+        } catch (err) {
+            console.error(err);
+            showToast("❌ No se pudo completar el registro");
+        }
+    }
+
+    /* --- GESTIÓN DE MODALES --- */
+    function openModal(id) { 
+        document.getElementById(id).style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeModal(id) { 
+        const m = document.getElementById(id);
+        if(m) m.style.display = 'none'; 
+        document.body.style.overflow = 'auto';
+        if(id === 'modalProd') {
+            document.getElementById('preview-img').style.display = 'none';
+            document.getElementById('formNuevaFlor').reset();
+        }
+    }
+
+    function prepararEdicion(id, nombre, precio, stock, categoriaId) {
+        document.getElementById('edit-id').value = id;
+        document.getElementById('edit-nombre').value = nombre;
+        document.getElementById('edit-precio').value = precio;
+        document.getElementById('edit-stock').value = stock;
+        document.getElementById('edit-categoria').value = categoriaId;
+        openModal('modalEditar');
+    }
+
+    /* --- BUSCADOR Y PREVIEW --- */
+    document.getElementById('inputImagen')?.addEventListener('change', function(e) {
+        if(this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.getElementById('preview-img');
+                img.src = e.target.result;
+                img.style.display = 'block';
+            }
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
+    let searchTimeout;
+    document.getElementById('search-input')?.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const valor = this.value.toLowerCase();
+            document.querySelectorAll('#product-table-body tr').forEach(fila => {
+                const nombre = fila.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                fila.style.display = nombre.includes(valor) ? '' : 'none';
+            });
+        }, 250);
+    });
+
+    /* --- ACCIONES AJAX --- */
+    function abrirConfirmar(url, mensaje, rowId, countId) {
+        const form = document.getElementById('formConfirmarBorrado');
+        form.action = url;
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            try {
+                const res = await fetch(url, { method: 'POST' });
+                if (res.ok) {
+                    showToast(mensaje);
+                    const row = document.getElementById(rowId);
+                    if(row) {
+                        row.style.opacity = '0';
+                        setTimeout(() => row.remove(), 300);
+                    }
+                    const badge = document.getElementById(countId);
+                    if(badge) badge.innerText = Math.max(0, parseInt(badge.innerText) - 1);
+                    closeModal('modalConfirmar');
+                }
+            } catch (err) { showToast("Error de red"); }
+        };
+        openModal('modalConfirmar');
+    }
+
+    async function handleFormSubmit(event, form, successMsg) {
+        event.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Procesando...";
+        btn.disabled = true;
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: form.enctype === "multipart/form-data" ? formData : new URLSearchParams(formData)
+            });
+
+            if (response.ok) {
+                showToast(successMsg);
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast("Error en el servidor");
+            }
+        } catch (error) {
+            showToast("Error de conexión");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+        return false;
+    }
+
+    function showToast(message) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<i class="fas fa-info-circle"></i> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
+
+    window.onclick = (e) => { 
+        if(e.target.classList.contains('modal-overlay')) closeModal(e.target.id);
+    }
+</script>
+</body>
+</html>
