@@ -1,0 +1,17 @@
+# Dependencias (Nunca subas esto, se reinstala con npm install)
+node_modules/
+
+# Variables de entorno (¡CRÍTICO! Aquí van tus secretos)
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Archivos de sistema (macOS / Windows)
+.DS_Store
+Thumbs.db
+
+# Bases de datos locales
+*.sqlite
+*.sqlite-journal
