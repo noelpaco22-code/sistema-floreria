@@ -11,6 +11,7 @@ const session = require('express-session');
 const fs = require('fs');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const validator = require('validator');
 
 // --- NUEVA LIBRERÍA PARA HUELLA ---
 const {
@@ -41,7 +42,7 @@ const upload = multer({
 app.set('view engine', 'ejs');
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // --- SESIONES CORREGIDAS ---
 app.set('trust proxy', 1); 
@@ -107,18 +108,7 @@ app.get('/admin/api/usuarios', isAdmin, async (req, res) => {
     }
 });
 // --- REGISTRO / LOGIN CLIENTES ---
-app.post('/registro', async (req, res) => {
-    const { nombre, email, password } = req.body;
-    try {
-        await pool.query(
-            'INSERT INTO usuarios (nombre, email, password, rol) VALUES ($1, $2, $3, $4)',
-            [nombre, email, password, 'cliente']
-        );
-        res.redirect('/?status=success_registro'); 
-    } catch (err) {
-        res.redirect('/?status=error_registro');
-    }
-});
+
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
