@@ -189,33 +189,43 @@ app.get('/logout', (req, res) => {
 
 app.post('/admin/dashboard-login', async (req, res) => {
     const { adminUser, adminPass } = req.body;
+    
+    // 1. Ver qué recibimos
+    console.log("--- INTENTO DE LOGIN ---");
+    console.log("Email recibido:", adminUser);
+    console.log("Password recibido (largo):", adminPass ? adminPass.length : "vacío");
+
     try {
-        // 1. Buscamos al admin por email y rol (sin pasar el password aún)
         const result = await pool.query(
             'SELECT * FROM usuarios WHERE email = $1 AND rol = $2', 
             [adminUser, 'admin']
         );
 
+        // 2. Ver qué encontró la base de datos
+        console.log("Usuarios encontrados en BD:", result.rows.length);
+
         if (result.rows.length > 0) {
             const user = result.rows[0];
-            
-            // 2. Comparamos el hash que guardamos contra el password que el admin escribió
             const match = await bcrypt.compare(adminPass, user.password);
+            
+            // 3. Ver si la contraseña coincide
+            console.log("¿Coincide la contraseña?:", match);
 
             if (match) {
                 req.session.user = user;
-                req.session.save((err) => {
-                    if(err) console.error("Error al guardar sesión:", err);
+                req.session.save(() => {
                     res.redirect('/admin?status=welcome'); 
                 });
             } else {
+                console.log("Error: La contraseña es incorrecta.");
                 res.redirect('/?status=error_auth'); 
             }
         } else {
+            console.log("Error: No se encontró usuario con ese email y rol 'admin'.");
             res.redirect('/?status=error_auth'); 
         }
     } catch (err) {
-        console.error(err);
+        console.error("Error crítico en BD:", err); // Este sí aparecerá en los logs
         res.redirect('/?status=error_server');
     }
 });
