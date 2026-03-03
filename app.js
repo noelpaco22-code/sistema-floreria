@@ -69,22 +69,12 @@ app.use((req, res, next) => {
     next();
 });
 
-// --- MIDDLEWARE DE PROTECCIÓN (CON MODO DEBUG) ---
+// --- MIDDLEWARE DE PROTECCIÓN ---
 function isAdmin(req, res, next) {
-    console.log("--- CHEQUEO DEL PORTERO ---");
-    console.log("¿Existe req.session.user?:", !!req.session.user);
-    
-    if (req.session.user) {
-        console.log("Rol detectado:", req.session.user.rol);
-    } else {
-        console.log("No hay sesión de usuario activa.");
-    }
-
     if (req.session.user && req.session.user.rol === 'admin') {
         return next();
     }
-    
-    console.log("Acceso denegado. Redirigiendo al home.");
+    // Redirigimos sin loguear nada
     res.redirect('/?status=error_auth');
 }
 
