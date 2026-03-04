@@ -48,18 +48,6 @@
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
         .toast { background: #333; color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary-gold); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-/* Transición suave para las secciones */
-main > section, 
-main > div[id^="section-"] {
-    transition: opacity 0.3s ease-in-out;
-    opacity: 1;
-}
-
-/* Opcional: Si quieres un efecto de desvanecimiento al ocultar */
-.hidden {
-    opacity: 0;
-    display: none;
-}
     </style>
 </head>
 <body>
@@ -99,9 +87,9 @@ main > div[id^="section-"] {
             <i class="fas fa-fingerprint"></i> <span>Vincular Huella</span>
         </button>
 
-        <a href="/logout" class="logout" onclick="return confirm('¿Seguro que quieres cerrar sesión?')">
-    <i class="fas fa-sign-out-alt"></i> <span>Cerrar Sesión</span>
-</a>
+        <a href="/logout" class="logout">
+            <i class="fas fa-sign-out-alt"></i> <span>Cerrar Sesión</span>
+        </a>
     </aside>
 <main class="main">
 
@@ -208,7 +196,7 @@ main > div[id^="section-"] {
                         <td><%= p.cliente_nombre %></td>
                         <td><%= p.total %> Bs</td>
                         <td><span class="badge"><%= p.estado %></span></td>
-                        <td><button class="btn-edit"><i class="fas fa-eye"></i></button></td>
+                       <td><button class="btn-edit" onclick="verDetallePedido('<%= p.id %>')"><i class="fas fa-eye"></i></button></td>
                     </tr>
                 <% }) %>
             </tbody>
@@ -313,7 +301,7 @@ main > div[id^="section-"] {
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>Stock</label>
-                        <input type="number" name="stock" class="form-control" min="0" required>
+                        <input type="number" name="stock" class="form-control" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -460,44 +448,35 @@ main > div[id^="section-"] {
         openModal('modalConfirmar');
     }
 
-   async function handleFormSubmit(event, form, successMsg) {
-    event.preventDefault();
-    const btn = form.querySelector('button[type="submit"]');
-    const originalText = btn.innerText;
-    btn.innerText = "Procesando...";
-    btn.disabled = true;
+    async function handleFormSubmit(event, form, successMsg) {
+        event.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Procesando...";
+        btn.disabled = true;
 
-    try {
-        // Creamos el FormData del formulario
-        const formData = new FormData(form);
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: form.enctype === "multipart/form-data" ? formData : new URLSearchParams(formData)
+            });
 
-        // Enviamos el FormData directamente. 
-        // IMPORTANTE: NO pongas 'Content-Type' en los headers.
-        // El navegador lo detectará solo y le añadirá el 'boundary' necesario.
-        const response = await fetch(form.action, {
-            method: 'POST',
-            body: formData 
-        });
-
-        // Leemos la respuesta del servidor para ver si hubo un error real
-        const data = await response.json();
-
-        if (response.ok) {
-            showToast(successMsg);
-            setTimeout(() => location.reload(), 800);
-        } else {
-            // Si el servidor responde con error, mostramos qué fue
-            showToast("Error: " + (data.error || "Algo salió mal"));
+            if (response.ok) {
+                showToast(successMsg);
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast("Error en el servidor");
+            }
+        } catch (error) {
+            showToast("Error de conexión");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
-    } catch (error) {
-        console.error("Error en el envío:", error);
-        showToast("Error de conexión");
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
+        return false;
     }
-    return false;
-}
+
     function showToast(message) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -518,19 +497,76 @@ main > div[id^="section-"] {
     document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
     elemento.classList.add('active');
 
-    // 2. Ocultar todas las secciones y divs contenedores
-    // Usamos querySelectorAll para capturar tanto las <section> como el div de dashboard
-    document.querySelectorAll('main > section, main > div[id^="section-"]').forEach(s => {
-        s.style.display = 'none';
-    });
+    // 2. Ocultar todas las secciones primero
+    // Esto es más limpio que ocultar una por una
+    document.getElementById('section-dashboard').style.display = 'none';
+    document.getElementById('section-usuarios').style.display = 'none';
+    document.getElementById('section-pedidos').style.display = 'none';
+    // Si tuvieras 'section-pedidos', aquí pondrías: document.getElementById('section-pedidos').style.display = 'none';
 
-    // 3. Mostrar la sección seleccionada
-    // Nota: Asegúrate de que los IDs en tu HTML sigan el patrón 'section-NOMBRE'
-    const target = document.getElementById('section-' + vista);
-    if (target) {
-        // Usamos 'block' o 'flex' dependiendo de cómo necesites el layout
-        target.style.display = (vista === 'dashboard') ? 'block' : 'block'; 
+    // 3. Mostrar solo la que corresponde
+    switch(vista) {
+        case 'dashboard':
+            document.getElementById('section-dashboard').style.display = 'block';
+            break;
+        case 'usuarios':
+            document.getElementById('section-usuarios').style.display = 'block';
+            cargarUsuarios(); // Cargamos datos solo aquí
+            break;
+        case 'pedidos':
+            document.getElementById('section-pedidos').style.display = 'block';
+            console.log("Cargando sección de pedidos...");
+            break;
+        default:
+            // Por seguridad, siempre mostramos el dashboard si algo sale mal
+            document.getElementById('section-dashboard').style.display = 'block';
+    }
+}
+async function cargarUsuarios() {
+    const tbody = document.getElementById('user-table-body');
+    tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
+    
+    try {
+        const res = await fetch('/admin/api/usuarios'); // Asegúrate de crear esta ruta
+        const usuarios = await res.json();
+        tbody.innerHTML = usuarios.map(u => `
+            <tr>
+                <td>${u.id}</td>
+                <td>${u.nombre}</td>
+                <td>${u.email}</td>
+                <td><button class="btn-del">Eliminar</button></td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4">Error al cargar usuarios</td></tr>';
     }
 }
 
-    // Si tuvieras 'section-pedidos', aquí pondrías: document.getElementById('section-pedidos').style.display = 'none';
+async function verDetallePedido(id) {
+    const modal = document.getElementById('modalDetalle');
+    const contenido = document.getElementById('detalle-contenido');
+    openModal('modalDetalle');
+    contenido.innerHTML = "Cargando detalles...";
+
+    try {
+        const res = await fetch(`/admin/api/pedido/${id}`);
+        const detalle = await res.json();
+        // Asumiendo que recibes un objeto con productos
+        contenido.innerHTML = `<pre>${JSON.stringify(detalle, null, 2)}</pre>`;
+    } catch (e) {
+        contenido.innerHTML = "Error al obtener detalles.";
+    }
+}
+</script>
+<div class="modal-overlay" id="modalDetalle">
+    <div class="modal-card">
+        <button type="button" class="close-btn" onclick="closeModal('modalDetalle')">&times;</button>
+        <h2 id="detalle-titulo" style="margin-bottom:20px">Detalle del Pedido</h2>
+        <div id="detalle-contenido">
+            <p>Cargando información...</p>
+        </div>
+        <button class="btn-primary" style="width:100%; margin-top:20px;" onclick="closeModal('modalDetalle')">Cerrar</button>
+    </div>
+</div>
+</body>
+</html>
