@@ -13,6 +13,18 @@ const validator = require('validator');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
+// --- INSERCIÓN SOLICITADA ---
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+console.log("--- DEBUG DE CLOUDINARY ---");
+console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME ? "CARGADO" : "FALTANTE");
+console.log("API Key:", process.env.CLOUDINARY_API_KEY ? "ENCONTRADA" : "NO ENCONTRADA");
+console.log("---------------------------");
+// ---------------------------
 
 // --- NUEVA LIBRERÍA PARA HUELLA ---
 const {
@@ -49,12 +61,12 @@ const storage = new CloudinaryStorage({
         public_id: (req, file) => 'flor-' + Date.now(),
     },
 });
+
 const upload = multer({ storage: storage });
 app.set('view engine', 'ejs');
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
 // --- SESIONES CORREGIDAS ---
 app.set('trust proxy', 1); 
 app.use(session({
