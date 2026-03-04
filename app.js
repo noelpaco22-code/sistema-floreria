@@ -117,7 +117,26 @@ app.get('/admin/api/usuarios', isAdmin, async (req, res) => {
     }
 });
 // --- REGISTRO / LOGIN CLIENTES ---
-
+// --- RUTA PARA DETALLE DE PEDIDO ---
+app.get('/admin/api/pedido/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Consultamos el detalle del pedido y los productos asociados
+        const query = `
+            SELECT dp.*, p.nombre as producto_nombre 
+            FROM detalle_pedidos dp
+            JOIN productos p ON dp.producto_id = p.id
+            WHERE dp.pedido_id = $1
+        `;
+        const result = await pool.query(query, [id]);
+        
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error al obtener detalle:", err);
+        res.status(500).json({ error: "Error al obtener detalles del pedido" });
+    }
+});
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
