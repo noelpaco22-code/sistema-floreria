@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 // Ahora puedes acceder a tus variables así:
 const port = process.env.PORT || 3000;
 const secret = process.env.SESSION_SECRET;
@@ -8,10 +7,12 @@ const path = require('path');
 const multer = require('multer');
 const pool = require('./db');
 const session = require('express-session');
-const fs = require('fs');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
 
 // --- NUEVA LIBRERÍA PARA HUELLA ---
 const {
@@ -23,22 +24,32 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// --- CONFIGURACIÓN DINÁMICA DE BIOMETRÍA ---
-let dynamicRpID = '';
-let dynamicOrigin = '';
+// Crea funciones "helper" (puedes ponerlas al principio)
+const getRpID = (req) => req.get('host').split(':')[0];
+const getOrigin = (req) => `${req.protocol}://${req.get('host')}`;
 
+// Y úsalas directamente en tus rutas:
+app.get('/admin/webauthn-register-options', isAdmin, async (req, res) => {
+    // ... tu código ...
+    const options = await generateRegistrationOptions({
+        rpName: 'Florería Margarita',
+        rpID: getRpID(req), // <--- Calculado al instante, solo para este usuario
+        userID: user.id.toString(),
+        // ... el resto
+    });
+    // ...
+});
 // --- CONFIGURACIÓN DE IMÁGENES ---
-const storage = multer.diskStorage({
-    destination: 'public/img',
-    filename: (req, file, cb) => {
-        cb(null, 'flor-' + Date.now() + path.extname(file.originalname));
-    }
-});
-const upload = multer({ 
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 } 
-});
 
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'floreria',
+        format: async (req, file) => 'png',
+        public_id: (req, file) => 'flor-' + Date.now(),
+    },
+});
+const upload = multer({ storage: storage });
 app.set('view engine', 'ejs');
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
@@ -59,12 +70,9 @@ app.use(session({
     } 
 }));
 
-// Middleware para detectar el dominio actual y pasar el usuario a EJS
+// Middleware para pasar el usuario a EJS (esto lo mantenemos)
 app.use((req, res, next) => {
-    dynamicRpID = req.get('host').split(':')[0]; 
-    dynamicOrigin = `${req.protocol}://${req.get('host')}`;
-    
-    // Esto hace que 'user' esté disponible en todos tus archivos .ejs
+    // Esto es necesario para que en tus vistas (EJS) puedas usar 'user'
     res.locals.user = req.session.user || null;
     next();
 });
@@ -241,47 +249,24 @@ app.post('/registro', async (req, res) => {
         res.redirect('/?status=error_registro');
     }
 });
-// 1. Iniciar registro de huella
-app.get('/admin/webauthn-register-options', isAdmin, async (req, res) => {
-    const user = req.session.user;
-    try {
-        const options = await generateRegistrationOptions({
-            rpName: 'Florería Margarita',
-            rpID: dynamicRpID,
-            userID: user.id.toString(),
-            userName: user.email,
-            attestationType: 'none',
-            authenticatorSelection: {
-                residentKey: 'preferred',
-                userVerification: 'preferred',
-                authenticatorAttachment: 'platform', 
-            },
-        });
-        req.session.currentChallenge = options.challenge;
-        req.session.save(() => {
-            res.json(options);
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
-    }
-});
 
-// 2. Verificar y guardar la huella
+// 2. Verificar y guardar la huella (Versión definitiva)
 app.post('/admin/webauthn-verify-register', isAdmin, async (req, res) => {
-    const { body } = req;
+    // Tomamos el cuerpo de la petición directamente
+    const body = req.body; 
     const expectedChallenge = req.session.currentChallenge;
 
     try {
         const verification = await verifyRegistrationResponse({
             response: body,
             expectedChallenge,
-            expectedOrigin: dynamicOrigin,
-            expectedRPID: dynamicRpID,
+            expectedOrigin: getOrigin(req),
+            expectedRPID: getRpID(req),
         });
 
         if (verification.verified) {
             const { credentialID, credentialPublicKey } = verification.registrationInfo;
+            
             await pool.query(
                 'UPDATE usuarios SET webauthn_id = $1, public_key = $2 WHERE id = $3',
                 [
@@ -290,10 +275,13 @@ app.post('/admin/webauthn-verify-register', isAdmin, async (req, res) => {
                     req.session.user.id
                 ]
             );
+            
             res.json({ success: true });
+        } else {
+            res.status(400).json({ error: 'La verificación falló.' });
         }
     } catch (error) {
-        console.error(error);
+        console.error("Error en WebAuthn:", error);
         res.status(400).json({ error: error.message });
     }
 });
@@ -310,7 +298,7 @@ app.post('/admin/webauthn-login-options', async (req, res) => {
         }
 
         const options = await generateAuthenticationOptions({
-            rpID: dynamicRpID,
+            rpID: getRpID(req),
             allowCredentials: [{
                 id: Buffer.from(user.webauthn_id, 'base64'),
                 type: 'public-key',
@@ -331,7 +319,8 @@ app.post('/admin/webauthn-login-options', async (req, res) => {
 
 // 4. Login con huella (VERIFICAR)
 app.post('/admin/webauthn-login-verify', async (req, res) => {
-    const { body } = req.body;
+    // 1. Corrección: El objeto es req.body, no es una propiedad dentro de req.body
+    const body = req.body; 
     const email = req.session.loginUserEmail;
     const expectedChallenge = req.session.currentChallenge;
 
@@ -339,15 +328,20 @@ app.post('/admin/webauthn-login-verify', async (req, res) => {
         const userRes = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
         const user = userRes.rows[0];
 
+        // 2. Seguridad: Verificamos que el usuario realmente exista antes de acceder a sus propiedades
+        if (!user) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+
         const verification = await verifyAuthenticationResponse({
             response: body,
             expectedChallenge,
-            expectedOrigin: dynamicOrigin,
-            expectedRPID: dynamicRpID,
+            expectedOrigin: getOrigin(req),
+            expectedRPID: getRpID(req),
             authenticator: {
                 credentialID: Buffer.from(user.webauthn_id, 'base64'),
                 credentialPublicKey: Buffer.from(user.public_key, 'base64'),
-                counter: 0,
+                counter: 0, // Nota: Si tuvieras un contador real, deberías actualizarlo aquí
             },
         });
 
@@ -360,6 +354,7 @@ app.post('/admin/webauthn-login-verify', async (req, res) => {
             res.status(400).json({ error: 'Fallo en la verificación biométrica' });
         }
     } catch (e) {
+        console.error("Error en verificación WebAuthn:", e);
         res.status(500).json({ error: e.message });
     }
 });
@@ -405,59 +400,92 @@ app.post('/admin/agregar-categoria', isAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({error: "Error de servidor"}); }
 });
 
-app.post('/admin/eliminar-categoria/:id', isAdmin, async (req, res) => {
+app.post('/admin/eliminar/:id', isAdmin, async (req, res) => {
     try {
-        await pool.query('DELETE FROM categorias WHERE id = $1', [req.params.id]);
+        const id = req.params.id;
+        const result = await pool.query('SELECT imagen_url FROM productos WHERE id = $1', [id]);
+        
+        if (result.rows.length > 0) {
+            const imagenUrl = result.rows[0].imagen_url;
+            // Solo intentamos borrar en Cloudinary si la URL es de allá
+            if (imagenUrl && imagenUrl.includes('cloudinary.com')) {
+                // Extraemos el public_id (ejemplo: 'floreria/nombre_archivo')
+                const parts = imagenUrl.split('/');
+                const fileName = parts[parts.length - 1]; // "flor-123456.png"
+                const publicId = `floreria/${fileName.split('.')[0]}`; // "floreria/flor-123456"
+                
+                await cloudinary.uploader.destroy(publicId);
+            }
+        }
+        
+        await pool.query('DELETE FROM productos WHERE id = $1', [id]);
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "No se puede eliminar: tiene productos asociados" }); }
+    } catch (err) { 
+        console.error(err);
+        res.status(500).json({ error: "Error al eliminar" }); 
+    }
 });
 
 app.post('/admin/agregar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
     try {
         const { nombre, precio, stock, categoria_id, descripcion } = req.body;
-        const img = req.file ? `/img/${req.file.filename}` : '/img/default.jpg';
-        const nuevo = await pool.query(
-            'INSERT INTO productos (nombre, precio, stock, imagen_url, categoria_id, descripcion) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id', 
-            [nombre, parseFloat(precio) || 0, parseInt(stock) || 0, img, categoria_id || null, descripcion || '']
-        );
-        res.status(200).json({ success: true, id: nuevo.rows[0].id, nombre, precio, stock, imagen_url: img });
-    } catch (err) { res.status(500).json({ error: "Error al guardar producto" }); }
-});
 
+        // 1. Validaciones
+        if (!nombre || nombre.trim() === "") return res.status(400).json({ error: "El nombre es obligatorio" });
+        const precioNum = parseFloat(precio);
+        const stockNum = parseInt(stock);
+
+        if (isNaN(precioNum) || precioNum < 0) return res.status(400).json({ error: "Precio inválido" });
+        if (isNaN(stockNum) || stockNum < 0) return res.status(400).json({ error: "Stock inválido" });
+
+        // 2. Lógica (Aquí estaba el hueco)
+        const img = req.file ? req.file.path : '/img/default.jpg';
+        
+        await pool.query(
+            'INSERT INTO productos (nombre, precio, stock, imagen_url, categoria_id, descripcion) VALUES ($1, $2, $3, $4, $5, $6)', 
+            [nombre, precioNum, stockNum, img, categoria_id || null, descripcion || '']
+        );
+
+        res.status(200).json({ success: true });
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error al guardar el producto" });
+    }
+});
 app.post('/admin/editar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
     try {
         const { id, nombre, precio, stock, categoria_id } = req.body;
         if(!id) return res.status(400).json({error: "Falta el ID"});
+
         if (req.file) {
+            // 1. Buscamos la imagen vieja
             const viejo = await pool.query('SELECT imagen_url FROM productos WHERE id = $1', [id]);
-            if(viejo.rows[0] && viejo.rows[0].imagen_url !== '/img/default.jpg') {
-                const viejaRuta = path.join(__dirname, 'public', viejo.rows[0].imagen_url);
-                if(fs.existsSync(viejaRuta)) fs.unlinkSync(viejaRuta);
+            if(viejo.rows[0] && viejo.rows[0].imagen_url && viejo.rows[0].imagen_url.includes('cloudinary.com')) {
+                // Borramos la vieja de Cloudinary
+                const parts = viejo.rows[0].imagen_url.split('/');
+                const fileName = parts[parts.length - 1];
+                const publicId = `floreria/${fileName.split('.')[0]}`;
+                await cloudinary.uploader.destroy(publicId);
             }
-            const imgUrl = `/img/${req.file.filename}`;
-            await pool.query('UPDATE productos SET nombre=$1, precio=$2, stock=$3, categoria_id=$4, imagen_url=$5 WHERE id=$6', [nombre, parseFloat(precio), parseInt(stock), categoria_id, imgUrl, id]);
+            
+            // 2. Usamos la nueva URL de Cloudinary
+            const imgUrl = req.file.path; 
+            await pool.query('UPDATE productos SET nombre=$1, precio=$2, stock=$3, categoria_id=$4, imagen_url=$5 WHERE id=$6', 
+                [nombre, parseFloat(precio), parseInt(stock), categoria_id, imgUrl, id]);
         } else {
-            await pool.query('UPDATE productos SET nombre=$1, precio=$2, stock=$3, categoria_id=$4 WHERE id=$5', [nombre, parseFloat(precio), parseInt(stock), categoria_id, id]);
+            // Sin nueva imagen, solo actualizamos datos
+            await pool.query('UPDATE productos SET nombre=$1, precio=$2, stock=$3, categoria_id=$4 WHERE id=$5', 
+                [nombre, parseFloat(precio), parseInt(stock), categoria_id, id]);
         }
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Error al editar" }); }
+    } catch (err) { 
+        console.error(err);
+        res.status(500).json({ error: "Error al editar" }); 
+    }
 });
 
-app.post('/admin/eliminar/:id', isAdmin, async (req, res) => {
-    try {
-        const id = req.params.id;
-        const result = await pool.query('SELECT imagen_url FROM productos WHERE id = $1', [id]);
-        if (result.rows.length > 0) {
-            const imagenUrl = result.rows[0].imagen_url;
-            if (imagenUrl && imagenUrl !== '/img/default.jpg') {
-                const rutaFisica = path.join(__dirname, 'public', imagenUrl);
-                if (fs.existsSync(rutaFisica)) fs.unlinkSync(rutaFisica);
-            }
-        }
-        await pool.query('DELETE FROM productos WHERE id = $1', [id]);
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: "Error al eliminar" }); }
-});
+
 
 app.listen(PORT, () => {
     console.log(`Servidor listo en http://localhost:${PORT}`);
