@@ -428,28 +428,34 @@ app.post('/admin/eliminar/:id', isAdmin, async (req, res) => {
 
 app.post('/admin/agregar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
     try {
-        const { nombre, precio, stock, categoria_id, descripcion } = req.body;
+        // 1. Depuración (esto te dirá si llega el archivo)
+        console.log("¿Qué recibí en req.file?:", req.file);
 
-        // 1. Validaciones
-        if (!nombre || nombre.trim() === "") return res.status(400).json({ error: "El nombre es obligatorio" });
+        // 2. Extraer datos
+        const { nombre, precio, stock, categoria_id, descripcion } = req.body;
+        
+        // 3. Obtener la URL de la imagen. 
+        // Si se subió, req.file.path contiene la URL de Cloudinary.
+        const img = req.file ? req.file.path : '/img/default.jpg';
+
+        // 4. Validaciones numéricas
         const precioNum = parseFloat(precio);
         const stockNum = parseInt(stock);
 
-        if (isNaN(precioNum) || precioNum < 0) return res.status(400).json({ error: "Precio inválido" });
-        if (isNaN(stockNum) || stockNum < 0) return res.status(400).json({ error: "Stock inválido" });
+        if (isNaN(precioNum) || isNaN(stockNum)) {
+            return res.status(400).json({ error: "Precio o stock inválidos" });
+        }
 
-        // 2. Lógica (Aquí estaba el hueco)
-        const img = req.file ? req.file.path : '/img/default.jpg';
-        
+        // 5. Guardar en BD
         await pool.query(
-            'INSERT INTO productos (nombre, precio, stock, imagen_url, categoria_id, descripcion) VALUES ($1, $2, $3, $4, $5, $6)', 
+            'INSERT INTO productos (nombre, precio, stock, imagen_url, categoria_id, descripcion) VALUES ($1, $2, $3, $4, $5, $6)',
             [nombre, precioNum, stockNum, img, categoria_id || null, descripcion || '']
         );
 
         res.status(200).json({ success: true });
         
     } catch (err) {
-        console.error(err);
+        console.error("Error al guardar:", err);
         res.status(500).json({ error: "Error al guardar el producto" });
     }
 });
