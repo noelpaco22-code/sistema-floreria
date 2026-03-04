@@ -461,26 +461,23 @@ app.post('/admin/agregar-flor', isAdmin, upload.single('imagen'), async (req, re
 });
 app.post('/admin/editar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
     try {
+        // --- AGREGA ESTO PARA DEPURAR ---
+        console.log("¿Qué recibí en req.file?:", req.file);
+        // --------------------------------
+
         const { id, nombre, precio, stock, categoria_id } = req.body;
         if(!id) return res.status(400).json({error: "Falta el ID"});
 
         if (req.file) {
-            // 1. Buscamos la imagen vieja
-            const viejo = await pool.query('SELECT imagen_url FROM productos WHERE id = $1', [id]);
-            if(viejo.rows[0] && viejo.rows[0].imagen_url && viejo.rows[0].imagen_url.includes('cloudinary.com')) {
-                // Borramos la vieja de Cloudinary
-                const parts = viejo.rows[0].imagen_url.split('/');
-                const fileName = parts[parts.length - 1];
-                const publicId = `floreria/${fileName.split('.')[0]}`;
-                await cloudinary.uploader.destroy(publicId);
-            }
+            // ... (tu lógica de borrado anterior) ...
             
             // 2. Usamos la nueva URL de Cloudinary
             const imgUrl = req.file.path; 
             await pool.query('UPDATE productos SET nombre=$1, precio=$2, stock=$3, categoria_id=$4, imagen_url=$5 WHERE id=$6', 
                 [nombre, parseFloat(precio), parseInt(stock), categoria_id, imgUrl, id]);
         } else {
-            // Sin nueva imagen, solo actualizamos datos
+            // Si req.file es undefined, entra aquí:
+            console.log("¡CUIDADO! No se detectó ninguna imagen nueva.");
             await pool.query('UPDATE productos SET nombre=$1, precio=$2, stock=$3, categoria_id=$4 WHERE id=$5', 
                 [nombre, parseFloat(precio), parseInt(stock), categoria_id, id]);
         }
