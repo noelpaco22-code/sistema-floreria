@@ -183,16 +183,20 @@ app.post('/api/guardar-pedido', async (req, res) => {
         return res.status(401).json({ success: false, message: "Debes iniciar sesión" });
     }
 
-    // Pedimos un cliente específico del pool para manejar la transacción
+    // 1. VALIDACIÓN PREVIA: Aseguramos que los datos existan antes de conectar
+    const { total, productos } = req.body;
+    if (!productos || !Array.isArray(productos) || productos.length === 0) {
+        console.error("ERROR: El frontend envió un formato inválido:", req.body);
+        return res.status(400).json({ success: false, message: "El carrito está vacío o el formato es incorrecto" });
+    }
+
     const client = await pool.connect();
 
     try {
-        const { total, productos } = req.body;
-        const userId = req.session.user.id;
-
-        // 1. Iniciamos la transacción
         await client.query('BEGIN');
 
+        const userId = req.session.user.id;
+        
         // 2. Guardamos el pedido principal
         const pedido = await client.query(
             'INSERT INTO pedidos (usuario_id, total, fecha) VALUES ($1, $2, NOW()) RETURNING id',
@@ -200,25 +204,30 @@ app.post('/api/guardar-pedido', async (req, res) => {
         );
         const pedidoId = pedido.rows[0].id;
 
-        // 3. Guardamos los detalles
+        // 3. Guardamos los detalles con verificación de estructura
         for (const item of productos) {
+            // Si el frontend envía 'producto_id' en vez de 'id', el error saltará aquí
+            if (!item.id || !item.cantidad || !item.precio) {
+                throw new Error(`Producto inválido detectado: ${JSON.stringify(item)}`);
+            }
+            
             await client.query(
                 'INSERT INTO detalle_pedidos (pedido_id, producto_id, cantidad, precio_unitario) VALUES ($1, $2, $3, $4)',
                 [pedidoId, item.id, item.cantidad, item.precio]
             );
         }
 
-        // 4. Si todo salió bien, confirmamos (COMMIT)
+        // 4. Todo bien, guardamos
         await client.query('COMMIT');
         res.json({ success: true, pedidoId: pedidoId });
 
     } catch (err) {
-        // 5. Si algo falló, revertimos todo (ROLLBACK)
+        // 5. Algo falló, revertimos
         await client.query('ROLLBACK');
-        console.error("Error crítico en pedido, haciendo rollback:", err);
-        res.status(500).json({ success: false, message: "Error al procesar el pedido" });
+        console.error("Error crítico en pedido, haciendo rollback:", err.message);
+        res.status(500).json({ success: false, message: "Error al procesar el pedido: " + err.message });
     } finally {
-        // 6. Liberamos el cliente de vuelta al pool
+        // 6. Liberamos
         client.release();
     }
 });
