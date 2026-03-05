@@ -424,29 +424,38 @@
         }, 250);
     });
 
-    /* --- ACCIONES AJAX --- */
-    function abrirConfirmar(url, mensaje, rowId, countId) {
-        const form = document.getElementById('formConfirmarBorrado');
-        form.action = url;
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            try {
-                const res = await fetch(url, { method: 'POST' });
-                if (res.ok) {
-                    showToast(mensaje);
-                    const row = document.getElementById(rowId);
-                    if(row) {
-                        row.style.opacity = '0';
-                        setTimeout(() => row.remove(), 300);
-                    }
-                    const badge = document.getElementById(countId);
-                    if(badge) badge.innerText = Math.max(0, parseInt(badge.innerText) - 1);
-                    closeModal('modalConfirmar');
+    // Busca esta función en tu <script> y modifícala así:
+function abrirConfirmar(url, mensaje, rowId, countId) {
+    const form = document.getElementById('formConfirmarBorrado');
+    form.action = url;
+    
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch(url, { method: 'POST' });
+            
+            if (res.ok) {
+                showToast(mensaje);
+                const row = document.getElementById(rowId);
+                if(row) {
+                    row.style.opacity = '0';
+                    setTimeout(() => row.remove(), 300);
                 }
-            } catch (err) { showToast("Error de red"); }
-        };
-        openModal('modalConfirmar');
-    }
+                const badge = document.getElementById(countId);
+                if(badge) badge.innerText = Math.max(0, parseInt(badge.innerText) - 1);
+                closeModal('modalConfirmar');
+            } else {
+                // AQUÍ ESTÁ LA MAGIA: Capturamos el error real
+                const errorData = await res.json();
+                showToast("❌ " + (errorData.error || "No se pudo eliminar"));
+                closeModal('modalConfirmar');
+            }
+        } catch (err) { 
+            showToast("❌ Error de red, verifica tu conexión"); 
+        }
+    };
+    openModal('modalConfirmar');
+}
 
     async function handleFormSubmit(event, form, successMsg) {
         event.preventDefault();
