@@ -350,27 +350,32 @@ async function confirmarYEnviar() {
     if (typeof carrito === 'undefined' || carrito.length === 0) return;
 
     const totalStr = document.getElementById('modal-total-amount').innerText;
-    // Limpiamos el texto para dejar solo el número (ej: "150.00 Bs" -> 150.00)
     const total = parseFloat(totalStr.replace(/[^0-9.]/g, '')); 
     
-    // Mostramos un pequeño feedback visual (opcional)
+    // --- ESTO ES LO QUE CORRIGE EL ERROR ---
+    // Mapeamos el carrito para asegurarnos que el servidor reciba solo lo que pide
+    const payload = {
+        total: total,
+        productos: carrito.map(item => ({
+            id: item.id,
+            cantidad: parseInt(item.cantidad),
+            precio: parseFloat(item.precio)
+        }))
+    };
+    // ---------------------------------------
+
     alert("Procesando pedido...");
 
     try {
-        // 1. Enviamos los datos a TU SERVIDOR (El backend que definiremos abajo)
         const response = await fetch('/api/guardar-pedido', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                total: total,
-                productos: carrito
-            })
+            body: JSON.stringify(payload) // Enviamos el payload corregido
         });
 
         const data = await response.json();
 
         if (data.success) {
-            // 2. Si el servidor guardó bien, armamos el mensaje
             let productosTexto = "";
             carrito.forEach(item => {
                 productosTexto += `%0A- *${item.nombre}* (x${item.cantidad})`;
@@ -378,14 +383,13 @@ async function confirmarYEnviar() {
 
             const mensaje = `Hola *Florería Margarita*, mi pedido #${data.pedidoId} ha sido registrado.%0A${productosTexto}%0A%0A*Total:* ${total} Bs.%0A%0AEn breve envío mi comprobante.`;
             
-            // 3. Abrimos WhatsApp
             window.open(`https://wa.me/59176515818?text=${mensaje}`, '_blank');
             
-            // 4. Limpiamos y cerramos
             carrito = []; 
             if(typeof actualizarCarritoUI === 'function') actualizarCarritoUI();
             closePayment();
         } else {
+            // Aquí verás el error real en la alerta si el backend falla
             alert("Error al registrar: " + data.message);
         }
     } catch (error) {
