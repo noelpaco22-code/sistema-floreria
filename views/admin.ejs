@@ -559,11 +559,36 @@ async function verDetallePedido(id) {
 
     try {
         const res = await fetch(`/admin/api/pedido/${id}`);
-        const detalle = await res.json();
-        // Asumiendo que recibes un objeto con productos
-        contenido.innerHTML = `<pre>${JSON.stringify(detalle, null, 2)}</pre>`;
+        const data = await res.json(); 
+        // Asumiendo que 'data' es un array de productos del pedido
+        
+        let html = `
+            <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #333;">
+                        <th style="text-align: left; padding: 8px;">Producto</th>
+                        <th style="text-align: center; padding: 8px;">Cant.</th>
+                        <th style="text-align: right; padding: 8px;">Precio</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        data.forEach(item => {
+            html += `
+                <tr style="border-bottom: 1px solid #222;">
+                    <td style="padding: 8px;">${item.nombre}</td>
+                    <td style="text-align: center; padding: 8px;">${item.cantidad}</td>
+                    <td style="text-align: right; padding: 8px;">${item.subtotal} Bs</td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        contenido.innerHTML = html;
+        
     } catch (e) {
-        contenido.innerHTML = "Error al obtener detalles.";
+        contenido.innerHTML = "No se pudieron cargar los detalles.";
     }
 }
 </script>
