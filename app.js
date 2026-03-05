@@ -431,6 +431,7 @@ app.post('/admin/agregar-categoria', isAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({error: "Error de servidor"}); }
 });
 
+// 1. RUTA PARA PRODUCTOS (La que ya tenías y es correcta)
 app.post('/admin/eliminar/:id', isAdmin, async (req, res) => {
     try {
         const id = req.params.id;
@@ -438,12 +439,10 @@ app.post('/admin/eliminar/:id', isAdmin, async (req, res) => {
         
         if (result.rows.length > 0) {
             const imagenUrl = result.rows[0].imagen_url;
-            // Solo intentamos borrar en Cloudinary si la URL es de allá
             if (imagenUrl && imagenUrl.includes('cloudinary.com')) {
-                // Extraemos el public_id (ejemplo: 'floreria/nombre_archivo')
                 const parts = imagenUrl.split('/');
-                const fileName = parts[parts.length - 1]; // "flor-123456.png"
-                const publicId = `floreria/${fileName.split('.')[0]}`; // "floreria/flor-123456"
+                const fileName = parts[parts.length - 1]; 
+                const publicId = `floreria/${fileName.split('.')[0]}`; 
                 
                 await cloudinary.uploader.destroy(publicId);
             }
@@ -457,6 +456,17 @@ app.post('/admin/eliminar/:id', isAdmin, async (req, res) => {
     }
 });
 
+// 2. RUTA PARA CATEGORÍAS (La nueva ruta que te faltaba)
+app.post('/admin/eliminar-categoria/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM categorias WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (err) { 
+        console.error("Error al eliminar categoría:", err);
+        res.status(500).json({ error: "No se puede eliminar porque hay productos vinculados" }); 
+    }
+});
 app.post('/admin/agregar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
     try {
         // 1. Depuración (esto te dirá si llega el archivo)
