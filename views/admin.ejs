@@ -215,21 +215,27 @@
         </table>
     </div>
 </section>
-    <section id="section-usuarios" class="content-box" style="display: none;">
-        <div class="box-header">
-            <h2>Gestión de Usuarios</h2>
-            <button class="btn-primary" onclick="alert('Funcionalidad de agregar')">+ Nuevo Usuario</button>
-        </div>
-        <div class="table-wrapper">
-            <table id="user-table">
-                <thead>
-                    <tr><th>ID</th><th>Nombre</th><th>Email</th><th>Acciones</th></tr>
-                </thead>
-                <tbody id="user-table-body">
-                    </tbody>
-            </table>
-        </div>
-    </section>
+<section id="section-usuarios" class="content-box" style="display: none;">
+    <div class="box-header">
+        <h2>Gestión de Usuarios</h2>
+        <button class="btn-primary" onclick="abrirModalAgregarUsuario()">+ Nuevo Usuario</button>
+    </div>
+    <div class="table-wrapper">
+        <table id="user-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="user-table-body">
+                <!-- Los usuarios se cargarán aquí -->
+            </tbody>
+        </table>
+    </div>
+</section>
 
 </main>
 
@@ -548,21 +554,32 @@ function abrirConfirmar(url, mensaje, rowId, countId) {
 }
 async function cargarUsuarios() {
     const tbody = document.getElementById('user-table-body');
-    tbody.innerHTML = '<tr><td colspan="4">Cargando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Cargando usuarios...</td></tr>';
     
     try {
-        const res = await fetch('/admin/api/usuarios'); // Asegúrate de crear esta ruta
+        const res = await fetch('/admin/api/usuarios');
         const usuarios = await res.json();
+        
+        if (usuarios.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay usuarios registrados</td></tr>';
+            return;
+        }
+        
         tbody.innerHTML = usuarios.map(u => `
-            <tr>
+            <tr id="row-user-${u.id}">
                 <td>${u.id}</td>
                 <td>${u.nombre}</td>
                 <td>${u.email}</td>
-                <td><button class="btn-del">Eliminar</button></td>
+                <td>
+                    <button class="btn-del" onclick="confirmarEliminarUsuario(${u.id}, '${u.nombre}')" title="Eliminar usuario">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             </tr>
         `).join('');
     } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="4">Error al cargar usuarios</td></tr>';
+        console.error("Error al cargar usuarios:", e);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ff4d4d;">Error al cargar usuarios</td></tr>';
     }
 }
 
@@ -1179,6 +1196,45 @@ function abrirConfirmarPedido(id) {
         }
     };
     openModal('modalConfirmar');
+}
+/* --- FUNCIONES PARA GESTIÓN DE USUARIOS --- */  ← 👈 PON ESTO AQUÍ
+function confirmarEliminarUsuario(id, nombre) {
+    const form = document.getElementById('formConfirmarBorrado');
+    form.action = '/admin/eliminar-usuario/' + id;
+    
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/admin/eliminar-usuario/' + id, { method: 'POST' });
+            const data = await res.json();
+            
+            if (data.success) {
+                showToast(`✅ Usuario "${nombre}" eliminado`);
+                const row = document.getElementById(`row-user-${id}`);
+                if(row) {
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        if (document.querySelectorAll('#user-table-body tr').length === 0) {
+                            document.getElementById('user-table-body').innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay usuarios registrados</td></tr>';
+                        }
+                    }, 300);
+                }
+                closeModal('modalConfirmar');
+            } else {
+                showToast("❌ " + (data.error || "No se pudo eliminar"));
+                closeModal('modalConfirmar');
+            }
+        } catch (err) { 
+            showToast("❌ Error de red"); 
+            closeModal('modalConfirmar');
+        }
+    };
+    openModal('modalConfirmar');
+}
+
+function abrirModalAgregarUsuario() {
+    notificarToast("Los usuarios se registran desde la tienda", "fa-users");
 }
 </script>
 <div class="modal-overlay" id="modalDetalle">
