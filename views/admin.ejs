@@ -997,7 +997,6 @@ app.get('/admin', isAdmin, async (req, res) => {
         const cats = await pool.query('SELECT * FROM categorias ORDER BY nombre ASC');
         let pedsRows = [];
         try {
-            // 👇 ESTA ES LA LÍNEA MODIFICADA
             const peds = await pool.query(`
                 SELECT p.*, u.nombre as cliente_nombre 
                 FROM pedidos p 
@@ -1005,6 +1004,10 @@ app.get('/admin', isAdmin, async (req, res) => {
                 ORDER BY p.id DESC
             `);
             pedsRows = peds.rows;
+            
+            // 👇 AGREGAR ESTE LOG PARA VER QUÉ DATOS LLEGAN
+            console.log("DATOS DE PEDIDOS:", JSON.stringify(pedsRows, null, 2));
+            
         } catch (e) { 
             console.error("Error al cargar pedidos:", e);
         }
