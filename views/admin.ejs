@@ -997,9 +997,17 @@ app.get('/admin', isAdmin, async (req, res) => {
         const cats = await pool.query('SELECT * FROM categorias ORDER BY nombre ASC');
         let pedsRows = [];
         try {
-            const peds = await pool.query('SELECT * FROM pedidos ORDER BY id DESC');
+            // 👇 ESTA ES LA LÍNEA MODIFICADA
+            const peds = await pool.query(`
+                SELECT p.*, u.nombre as cliente_nombre 
+                FROM pedidos p 
+                LEFT JOIN usuarios u ON p.usuario_id = u.id 
+                ORDER BY p.id DESC
+            `);
             pedsRows = peds.rows;
-        } catch (e) { }
+        } catch (e) { 
+            console.error("Error al cargar pedidos:", e);
+        }
 
         res.render('admin', { 
             productos: prod.rows, 
@@ -1007,6 +1015,7 @@ app.get('/admin', isAdmin, async (req, res) => {
             pedidos: pedsRows 
         });
     } catch (err) { 
+        console.error("Error en admin:", err);
         res.status(500).send("Error al cargar el panel."); 
     }
 });
