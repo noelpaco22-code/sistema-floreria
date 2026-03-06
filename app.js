@@ -201,8 +201,9 @@ app.post('/api/guardar-pedido', async (req, res) => {
         const userId = req.session.user.id;
         
         // 2. Guardamos el pedido principal
+        // 👇 CORREGIDO: Cambié 'fecha' por 'fecha_pedido'
         const pedido = await client.query(
-            'INSERT INTO pedidos (usuario_id, total, fecha) VALUES ($1, $2, NOW()) RETURNING id',
+            'INSERT INTO pedidos (usuario_id, total, fecha_pedido) VALUES ($1, $2, NOW()) RETURNING id',
             [userId, total]
         );
         const pedidoId = pedido.rows[0].id;
