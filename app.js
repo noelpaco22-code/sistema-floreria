@@ -486,7 +486,39 @@ app.post('/admin/eliminar-categoria/:id', isAdmin, async (req, res) => {
         res.status(500).json({ error: "No se puede eliminar porque hay productos vinculados" }); 
     }
 });
+// --- ELIMINAR USUARIO (ADMIN) ---
+app.post('/admin/eliminar-usuario/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Verificar que el usuario existe y no es admin
+        const userCheck = await pool.query(
+            'SELECT rol FROM usuarios WHERE id = $1', 
+            [id]
+        );
+        
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+        
+        if (userCheck.rows[0].rol === 'admin') {
+            return res.status(403).json({ error: "No se puede eliminar un administrador" });
+        }
+        
+        // Eliminar el usuario
+        await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Error al eliminar usuario:", err);
+        res.status(500).json({ error: "Error al eliminar el usuario" });
+    }
+});
 
+// --- ELIMINAR PEDIDO (ADMIN) ---
+app.post('/admin/eliminar-pedido/:id', isAdmin, async (req, res) => {
+    // ... código de pedidos ...
+});
 // 👇 NUEVA RUTA PARA ELIMINAR PEDIDOS (AGREGA ESTO)
 // --- ELIMINAR PEDIDO (ADMIN) ---
 app.post('/admin/eliminar-pedido/:id', isAdmin, async (req, res) => {
