@@ -525,6 +525,37 @@ app.post('/admin/eliminar-usuario/:id', isAdmin, async (req, res) => {
 });
 
 // 👇 NUEVA RUTA PARA ELIMINAR PEDIDOS (AGREGA ESTO)
+// --- ACTUALIZAR ESTADO DE PEDIDO ---
+app.post('/admin/actualizar-estado-pedido', isAdmin, async (req, res) => {
+    try {
+        const { id, estado } = req.body;
+        
+        await pool.query(
+            'UPDATE pedidos SET estado = $1 WHERE id = $2',
+            [estado, id]
+        );
+        
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Error al actualizar estado:", err);
+        res.status(500).json({ error: "Error al actualizar estado" });
+    }
+});
+
+// --- OBTENER VENTAS TOTALES (SOLO COMPLETADOS) ---
+app.get('/admin/api/ventas-totales', isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT COALESCE(SUM(total), 0) as total FROM pedidos WHERE estado = $1',
+            ['completado']
+        );
+        
+        res.json({ total: parseFloat(result.rows[0].total) });
+    } catch (err) {
+        console.error("Error al obtener ventas:", err);
+        res.status(500).json({ error: "Error al obtener ventas" });
+    }
+});
 // --- ELIMINAR PEDIDO (ADMIN) ---
 app.post('/admin/eliminar-pedido/:id', isAdmin, async (req, res) => {
     const client = await pool.connect();
