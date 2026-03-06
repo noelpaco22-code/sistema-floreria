@@ -582,6 +582,121 @@ async function cargarUsuarios() {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ff4d4d;">Error al cargar usuarios</td></tr>';
     }
 }
+/* --- FUNCIÓN PARA VER DETALLE DE PEDIDOS --- */
+async function verDetallePedido(id) {
+    const modal = document.getElementById('modalDetalle');
+    const contenido = document.getElementById('detalle-contenido');
+    openModal('modalDetalle');
+    contenido.innerHTML = "Cargando detalles...";
+
+    try {
+        const res = await fetch(`/admin/api/pedido/${id}`);
+        const data = await res.json(); 
+        
+        let html = `
+            <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #333;">
+                        <th style="text-align: left; padding: 8px;">Imagen</th>
+                        <th style="text-align: left; padding: 8px;">Producto</th>
+                        <th style="text-align: center; padding: 8px;">Cant.</th>
+                        <th style="text-align: right; padding: 8px;">Precio</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        data.forEach(item => {
+            html += `
+                <tr style="border-bottom: 1px solid #222;">
+                    <td style="padding: 8px;">
+                        <img src="${item.imagen_url}" 
+                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px; cursor: pointer;"
+                             onclick="abrirImagen('${item.imagen_url}')">
+                    </td>
+                    <td style="padding: 8px;">${item.producto_nombre}</td>
+                    <td style="text-align: center; padding: 8px;">${item.cantidad}</td>
+                    <td style="text-align: right; padding: 8px;">${item.precio_unitario} Bs</td>
+                </tr>`;
+        });
+
+        html += `</tbody></table>`;
+        contenido.innerHTML = html;
+        
+    } catch (e) {
+        console.error(e);
+        contenido.innerHTML = "No se pudieron cargar los detalles.";
+    }
+}
+
+/* --- FUNCIÓN PARA ELIMINAR PEDIDOS --- */
+function abrirConfirmarPedido(id) {
+    const form = document.getElementById('formConfirmarBorrado');
+    form.action = '/admin/eliminar-pedido/' + id;
+    
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/admin/eliminar-pedido/' + id, { method: 'POST' });
+            
+            if (res.ok) {
+                showToast("✅ Pedido eliminado");
+                const row = document.querySelector(`button[onclick="abrirConfirmarPedido('${id}')"]`).closest('tr');
+                if(row) {
+                    row.style.opacity = '0';
+                    setTimeout(() => row.remove(), 300);
+                }
+                closeModal('modalConfirmar');
+            } else {
+                const errorData = await res.json();
+                showToast("❌ " + (errorData.error || "No se pudo eliminar"));
+                closeModal('modalConfirmar');
+            }
+        } catch (err) { 
+            showToast("❌ Error de red"); 
+        }
+    };
+    openModal('modalConfirmar');
+}
+
+/* --- FUNCIÓN PARA ELIMINAR USUARIOS --- */
+function confirmarEliminarUsuario(id, nombre) {
+    const form = document.getElementById('formConfirmarBorrado');
+    form.action = '/admin/eliminar-usuario/' + id;
+    
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/admin/eliminar-usuario/' + id, { method: 'POST' });
+            const data = await res.json();
+            
+            if (data.success) {
+                showToast(`✅ Usuario "${nombre}" eliminado`);
+                const row = document.getElementById(`row-user-${id}`);
+                if(row) {
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        if (document.querySelectorAll('#user-table-body tr').length === 0) {
+                            document.getElementById('user-table-body').innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay usuarios registrados</td></tr>';
+                        }
+                    }, 300);
+                }
+                closeModal('modalConfirmar');
+            } else {
+                showToast("❌ " + (data.error || "No se pudo eliminar"));
+                closeModal('modalConfirmar');
+            }
+        } catch (err) { 
+            showToast("❌ Error de red"); 
+            closeModal('modalConfirmar');
+        }
+    };
+    openModal('modalConfirmar');
+}
+
+function abrirModalAgregarUsuario() {
+    showToast("Los usuarios se registran desde la tienda");
+}
 </script>
 <div class="modal-overlay" id="modalDetalle">
     <div class="modal-card">
