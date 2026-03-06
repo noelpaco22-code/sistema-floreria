@@ -352,8 +352,6 @@ async function confirmarYEnviar() {
     const totalStr = document.getElementById('modal-total-amount').innerText;
     const total = parseFloat(totalStr.replace(/[^0-9.]/g, '')); 
     
-    // --- ESTO ES LO QUE CORRIGE EL ERROR ---
-    // Mapeamos el carrito para asegurarnos que el servidor reciba solo lo que pide
     const payload = {
         total: total,
         productos: carrito.map(item => ({
@@ -362,7 +360,6 @@ async function confirmarYEnviar() {
             precio: parseFloat(item.precio)
         }))
     };
-    // ---------------------------------------
 
     alert("Procesando pedido...");
 
@@ -370,26 +367,36 @@ async function confirmarYEnviar() {
         const response = await fetch('/api/guardar-pedido', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload) // Enviamos el payload corregido
+            body: JSON.stringify(payload)
         });
 
         const data = await response.json();
 
         if (data.success) {
+            // Construir el mensaje de WhatsApp correctamente
             let productosTexto = "";
             carrito.forEach(item => {
-                productosTexto += `%0A- *${item.nombre}* (x${item.cantidad})`;
+                productosTexto += `\n- ${item.nombre} (x${item.cantidad}) - Bs. ${item.precio}`;
             });
 
-            const mensaje = `Hola *Florería Margarita*, mi pedido #${data.pedidoId} ha sido registrado.%0A${productosTexto}%0A%0A*Total:* ${total} Bs.%0A%0AEn breve envío mi comprobante.`;
+            // Usar encodeURIComponent para manejar correctamente los saltos de línea
+            const mensaje = `Hola *Florería Margarita*, mi pedido #${data.pedidoId} ha sido registrado.\n\n*DETALLE DEL PEDIDO:*${productosTexto}\n\n*TOTAL:* Bs. ${total}\n\n*FORMA DE PAGO:* Transferencia bancaria\n\nAdjunto mi comprobante.`;
             
-            window.open(`https://wa.me/59176515818?text=${mensaje}`, '_blank');
+            // Codificar el mensaje para URL
+            const mensajeCodificado = encodeURIComponent(mensaje);
             
+            // Abrir WhatsApp
+            window.open(`https://wa.me/59176515818?text=${mensajeCodificado}`, '_blank');
+            
+            // Vaciar carrito
             carrito = []; 
             if(typeof actualizarCarritoUI === 'function') actualizarCarritoUI();
             closePayment();
+            
+            // Mostrar mensaje de éxito
+            alert("✅ ¡Pedido registrado! Serás redirigido a WhatsApp para enviar el comprobante.");
+            
         } else {
-            // Aquí verás el error real en la alerta si el backend falla
             alert("Error al registrar: " + data.message);
         }
     } catch (error) {
