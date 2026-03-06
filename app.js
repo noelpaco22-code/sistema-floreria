@@ -414,7 +414,13 @@ app.get('/admin', isAdmin, async (req, res) => {
         const cats = await pool.query('SELECT * FROM categorias ORDER BY nombre ASC');
         let pedsRows = [];
         try {
-            const peds = await pool.query('SELECT * FROM pedidos ORDER BY id DESC');
+            // DEBE SER ASÍ
+const peds = await pool.query(`
+    SELECT p.*, u.nombre as cliente_nombre 
+    FROM pedidos p 
+    LEFT JOIN usuarios u ON p.usuario_id = u.id 
+    ORDER BY p.id DESC
+`);
             pedsRows = peds.rows;
         } catch (e) { }
 
