@@ -475,7 +475,7 @@ app.post('/admin/eliminar/:id', isAdmin, async (req, res) => {
     }
 });
 
-// 2. RUTA PARA CATEGORÍAS (La nueva ruta que te faltaba)
+// 2. RUTA PARA CATEGORÍAS (La que ya tienes)
 app.post('/admin/eliminar-categoria/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -485,6 +485,39 @@ app.post('/admin/eliminar-categoria/:id', isAdmin, async (req, res) => {
         console.error("Error al eliminar categoría:", err);
         res.status(500).json({ error: "No se puede eliminar porque hay productos vinculados" }); 
     }
+});
+
+// 👇 NUEVA RUTA PARA ELIMINAR PEDIDOS (AGREGA ESTO)
+// --- ELIMINAR PEDIDO (ADMIN) ---
+app.post('/admin/eliminar-pedido/:id', isAdmin, async (req, res) => {
+    const client = await pool.connect();
+    
+    try {
+        const { id } = req.params;
+        
+        await client.query('BEGIN');
+        
+        // Primero eliminar los detalles del pedido
+        await client.query('DELETE FROM detalle_pedidos WHERE pedido_id = $1', [id]);
+        
+        // Luego eliminar el pedido
+        await client.query('DELETE FROM pedidos WHERE id = $1', [id]);
+        
+        await client.query('COMMIT');
+        
+        res.json({ success: true });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Error al eliminar pedido:", err);
+        res.status(500).json({ error: "Error al eliminar el pedido" });
+    } finally {
+        client.release();
+    }
+});
+
+// 3. RUTA PARA AGREGAR FLOR (la que sigue después)
+app.post('/admin/agregar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
+    // ... código existente ...
 });
 app.post('/admin/agregar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
     try {
