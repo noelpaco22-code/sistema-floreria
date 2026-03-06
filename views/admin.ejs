@@ -202,7 +202,13 @@
                         <td><%= p.cliente_nombre %></td>
                         <td><%= p.total %> Bs</td>
                         <td><span class="badge"><%= p.estado %></span></td>
-                       <td><button class="btn-edit" onclick="verDetallePedido('<%= p.id %>')"><i class="fas fa-eye"></i></button></td>
+                       <td>
+                        <button class="btn-edit" onclick="verDetallePedido('<%= p.id %>')"><i class="fas fa-eye"></i>
+                       </button>
+                        <button class="btn-del" onclick="abrirConfirmarPedido('<%= p.id %>')" title="Eliminar pedido">
+        <i class="fas fa-trash"></i>
+    </button>
+                      </td>
                     </tr>
                 <% }) %>
             </tbody>
@@ -1145,7 +1151,35 @@ function abrirImagen(url) {
 function cerrarImagen() {
     document.getElementById('modalImagenGrande').style.display = 'none';
 }
-
+/* --- FUNCIÓN PARA ELIMINAR PEDIDOS --- */
+function abrirConfirmarPedido(id) {
+    const form = document.getElementById('formConfirmarBorrado');
+    form.action = '/admin/eliminar-pedido/' + id;
+    
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/admin/eliminar-pedido/' + id, { method: 'POST' });
+            
+            if (res.ok) {
+                showToast("✅ Pedido eliminado");
+                const row = document.querySelector(`button[onclick="abrirConfirmarPedido('${id}')"]`).closest('tr');
+                if(row) {
+                    row.style.opacity = '0';
+                    setTimeout(() => row.remove(), 300);
+                }
+                closeModal('modalConfirmar');
+            } else {
+                const errorData = await res.json();
+                showToast("❌ " + (errorData.error || "No se pudo eliminar"));
+                closeModal('modalConfirmar');
+            }
+        } catch (err) { 
+            showToast("❌ Error de red"); 
+        }
+    };
+    openModal('modalConfirmar');
+}
 </script>
 <div class="modal-overlay" id="modalDetalle">
     <div class="modal-card">
