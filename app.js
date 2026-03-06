@@ -515,10 +515,6 @@ app.post('/admin/eliminar-usuario/:id', isAdmin, async (req, res) => {
     }
 });
 
-// --- ELIMINAR PEDIDO (ADMIN) ---
-app.post('/admin/eliminar-pedido/:id', isAdmin, async (req, res) => {
-    // ... código de pedidos ...
-});
 // 👇 NUEVA RUTA PARA ELIMINAR PEDIDOS (AGREGA ESTO)
 // --- ELIMINAR PEDIDO (ADMIN) ---
 app.post('/admin/eliminar-pedido/:id', isAdmin, async (req, res) => {
@@ -547,10 +543,6 @@ app.post('/admin/eliminar-pedido/:id', isAdmin, async (req, res) => {
     }
 });
 
-// 3. RUTA PARA AGREGAR FLOR (la que sigue después)
-app.post('/admin/agregar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
-    // ... código existente ...
-});
 app.post('/admin/agregar-flor', isAdmin, upload.single('imagen'), async (req, res) => {
     try {
         // 1. Depuración (esto te dirá si llega el archivo)
