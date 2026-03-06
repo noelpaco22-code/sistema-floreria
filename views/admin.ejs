@@ -697,7 +697,14 @@ function confirmarEliminarUsuario(id, nombre) {
 function abrirModalAgregarUsuario() {
     showToast("Los usuarios se registran desde la tienda");
 }
-
+function abrirImagen(url) {
+    const modal = document.getElementById('modalImagenGrande');
+    const imgAmpliada = document.getElementById('imagenAmpliada');
+    if (modal && imgAmpliada) {
+        imgAmpliada.src = url;
+        modal.style.display = 'flex';
+    }
+}
 </script>
 <div class="modal-overlay" id="modalDetalle">
     <div class="modal-card">
