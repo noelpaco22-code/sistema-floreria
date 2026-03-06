@@ -133,12 +133,13 @@ app.get('/admin/api/pedido/:id', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         
-        // La consulta ahora incluye p.imagen_url para que esté disponible
+        // Consulta para obtener detalles del pedido
         const query = `
             SELECT 
                 dp.*, 
                 p.nombre AS producto_nombre, 
-                p.imagen_url 
+                p.imagen_url,
+                p.id AS producto_id
             FROM detalle_pedidos dp
             JOIN productos p ON dp.producto_id = p.id 
             WHERE dp.pedido_id = $1
@@ -146,10 +147,18 @@ app.get('/admin/api/pedido/:id', isAdmin, async (req, res) => {
         
         const result = await pool.query(query, [id]);
         
-        // Ahora result.rows contiene toda la información, incluyendo la imagen
+        // 👇 AGREGAMOS LOG PARA VER QUÉ DATOS LLEGAN
+        console.log("📦 Datos del pedido:", JSON.stringify(result.rows, null, 2));
+        
+        // Verificar si la imagen existe en los resultados
+        if (result.rows.length > 0) {
+            console.log("🖼️ Primera imagen:", result.rows[0].imagen_url);
+        }
+        
         res.json(result.rows);
+        
     } catch (err) {
-        console.error("Error al obtener detalle:", err);
+        console.error("❌ Error al obtener detalle:", err);
         res.status(500).json({ error: "Error al obtener detalles del pedido" });
     }
 });
