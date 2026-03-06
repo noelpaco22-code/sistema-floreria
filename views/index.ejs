@@ -10,7 +10,79 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="/css/pagina_principal.css">
         <link rel="stylesheet" href="/css/carrito.css">
+<style>
+/* MODALES ELEGANTES */
+.modal-elegante {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(5px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000001;
+}
 
+.modal-contenido {
+    background: #111;
+    padding: 40px;
+    border-radius: 15px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    animation: aparecerModal 0.3s ease;
+}
+
+@keyframes aparecerModal {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* SPINNER DE LUJO */
+.spinner-lujo {
+    margin: 20px auto;
+    width: 60px;
+    height: 60px;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(212, 175, 55, 0.1);
+    border-top: 4px solid var(--accent-green);
+    border-right: 4px solid var(--accent-green);
+    border-radius: 50%;
+    animation: girar 1s linear infinite;
+}
+
+@keyframes girar {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ICONOS */
+.icono-exito, .icono-error {
+    margin: 10px auto;
+    animation: latir 0.5s ease;
+}
+
+@keyframes latir {
+    0% { transform: scale(0.8); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+</style>
 </head>
 
 <body>
@@ -361,7 +433,8 @@ async function confirmarYEnviar() {
         }))
     };
 
-    alert("Procesando pedido...");
+    // Mostrar modal de carga
+    document.getElementById('modalCarga').style.display = 'flex';
 
     try {
         const response = await fetch('/api/guardar-pedido', {
@@ -372,39 +445,59 @@ async function confirmarYEnviar() {
 
         const data = await response.json();
 
+        // Ocultar modal de carga
+        document.getElementById('modalCarga').style.display = 'none';
+
         if (data.success) {
-            // Construir el mensaje de WhatsApp correctamente
+            // Construir el mensaje de WhatsApp
             let productosTexto = "";
             carrito.forEach(item => {
                 productosTexto += `\n- ${item.nombre} (x${item.cantidad}) - Bs. ${item.precio}`;
             });
 
-            // Usar encodeURIComponent para manejar correctamente los saltos de línea
-            const mensaje = `Hola *Florería Margarita*, mi pedido #${data.pedidoId} ha sido registrado.\n\n*DETALLE DEL PEDIDO:*${productosTexto}\n\n*TOTAL:* Bs. ${total}\n\n*FORMA DE PAGO:* Transferencia bancaria\n\nAdjunto mi comprobante.`;
+            // Guardar el mensaje y pedidoId para usarlos después
+            window.mensajeWhatsApp = `Hola *Florería Margarita*, mi pedido #${data.pedidoId} ha sido registrado.\n\n*DETALLE DEL PEDIDO:*${productosTexto}\n\n*TOTAL:* Bs. ${total}\n\n*FORMA DE PAGO:* Transferencia bancaria\n\nAdjunto mi comprobante.`;
+            window.pedidoId = data.pedidoId;
             
-            // Codificar el mensaje para URL
-            const mensajeCodificado = encodeURIComponent(mensaje);
-            
-            // Abrir WhatsApp
-            window.open(`https://wa.me/59176515818?text=${mensajeCodificado}`, '_blank');
-            
-            // Vaciar carrito
-            carrito = []; 
-            if(typeof actualizarCarritoUI === 'function') actualizarCarritoUI();
-            closePayment();
-            
-            // Mostrar mensaje de éxito
-            alert("✅ ¡Pedido registrado! Serás redirigido a WhatsApp para enviar el comprobante.");
+            // Mostrar modal de éxito
+            document.getElementById('modalExito').style.display = 'flex';
             
         } else {
-            alert("Error al registrar: " + data.message);
+            // Mostrar modal de error
+            document.getElementById('mensajeError').innerText = data.message || "Error al procesar el pedido";
+            document.getElementById('modalError').style.display = 'flex';
         }
     } catch (error) {
         console.error("Error:", error);
-        alert("Hubo un problema de conexión. Intenta de nuevo.");
+        document.getElementById('modalCarga').style.display = 'none';
+        document.getElementById('mensajeError').innerText = "Hubo un problema de conexión. Intenta de nuevo.";
+        document.getElementById('modalError').style.display = 'flex';
     }
 }
 
+/* --- FUNCIONES PARA LOS MODALES --- */
+function cerrarModalExitoYRedirigir() {
+    const mensajeCodificado = encodeURIComponent(window.mensajeWhatsApp);
+    
+    // Abrir WhatsApp
+    window.open(`https://wa.me/59176515818?text=${mensajeCodificado}`, '_blank');
+    
+    // Vaciar carrito
+    carrito = []; 
+    if(typeof actualizarCarritoUI === 'function') actualizarCarritoUI();
+    closePayment();
+    
+    // Cerrar modal
+    document.getElementById('modalExito').style.display = 'none';
+    
+    // Limpiar variables
+    window.mensajeWhatsApp = null;
+    window.pedidoId = null;
+}
+
+function cerrarModalError() {
+    document.getElementById('modalError').style.display = 'none';
+}
 /* --- RESTO DE TUS FUNCIONES --- */
 function notificarAñadido(nombre) { notificarToast(`¡${nombre} añadido!`, "fa-shopping-basket"); }
 
@@ -543,6 +636,40 @@ function verificarAccesoCarrito(elemento) {
     <a href="https://wa.me/59176515818?text=Hola,%20quisiera%20consultar%20sobre%20sus%20arreglos%20florales." class="whatsapp-float" target="_blank">
         <i class="fab fa-whatsapp"></i>
     </a>
+</div>
+<!-- MODAL DE CARGA (PROCESANDO) -->
+<div id="modalCarga" class="modal-elegante" style="display:none;">
+    <div class="modal-contenido">
+        <div class="spinner-lujo">
+            <div class="spinner"></div>
+        </div>
+        <h3 style="color: var(--accent-green); margin: 20px 0 10px;">Procesando Pedido</h3>
+        <p style="color: #ccc; font-size: 0.9rem;">Por favor espera, estamos registrando tu pedido...</p>
+    </div>
+</div>
+
+<!-- MODAL DE ÉXITO -->
+<div id="modalExito" class="modal-elegante" style="display:none;">
+    <div class="modal-contenido">
+        <div class="icono-exito">
+            <i class="fas fa-check-circle" style="font-size: 4rem; color: var(--accent-green);"></i>
+        </div>
+        <h3 style="color: var(--accent-green); margin: 20px 0 10px;">¡Pedido Registrado!</h3>
+        <p id="mensajeExito" style="color: #ccc; font-size: 0.9rem; margin-bottom: 25px;">Serás redirigido a WhatsApp</p>
+        <button onclick="cerrarModalExitoYRedirigir()" class="btn-modal" style="background: var(--accent-green); width: 100%;">CONTINUAR A WHATSAPP</button>
+    </div>
+</div>
+
+<!-- MODAL DE ERROR -->
+<div id="modalError" class="modal-elegante" style="display:none;">
+    <div class="modal-contenido">
+        <div class="icono-error">
+            <i class="fas fa-exclamation-circle" style="font-size: 4rem; color: #ff4d4d;"></i>
+        </div>
+        <h3 style="color: #ff4d4d; margin: 20px 0 10px;">Error</h3>
+        <p id="mensajeError" style="color: #ccc; font-size: 0.9rem; margin-bottom: 25px;"></p>
+        <button onclick="cerrarModalError()" class="btn-modal" style="background: #ff4d4d; width: 100%;">CERRAR</button>
+    </div>
 </div>
 </body>
 </html>
