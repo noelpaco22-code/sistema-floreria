@@ -48,6 +48,18 @@
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
         .toast { background: #333; color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary-gold); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.estado-select {
+    background: #1a1a1a;
+    color: white;
+    border: 1px solid var(--primary-gold);
+    border-radius: 4px;
+    padding: 5px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+}
+.estado-select option[value="pendiente"] { color: #3498db; }
+.estado-select option[value="proceso"] { color: #f1c40f; }
+.estado-select option[value="completado"] { color: #2ecc71; }
     </style>
 </head>
 <body>
@@ -201,7 +213,13 @@
                     <tr>
                         <td><%= p.cliente_nombre %></td>
                         <td><%= p.total %> Bs</td>
-                        <td><span class="badge"><%= p.estado %></span></td>
+                       <td>
+    <select class="estado-select" data-pedido-id="<%= p.id %>" onchange="cambiarEstadoPedido(this)">
+        <option value="pendiente" <%= p.estado === 'pendiente' ? 'selected' : '' %>>🔵 Pendiente</option>
+        <option value="proceso" <%= p.estado === 'proceso' ? 'selected' : '' %>>🟡 En Proceso</option>
+        <option value="completado" <%= p.estado === 'completado' ? 'selected' : '' %>>🟢 Completado</option>
+    </select>
+</td>
                        <td>
                         <button class="btn-edit" onclick="verDetallePedido('<%= p.id %>')"><i class="fas fa-eye"></i>
                        </button>
@@ -703,6 +721,46 @@ function abrirImagen(url) {
     if (modal && imgAmpliada) {
         imgAmpliada.src = url;
         modal.style.display = 'flex';
+    }
+}
+/* --- FUNCIÓN PARA CAMBIAR ESTADO DE PEDIDO --- */
+async function cambiarEstadoPedido(selectElement) {
+    const pedidoId = selectElement.getAttribute('data-pedido-id');
+    const nuevoEstado = selectElement.value;
+    
+    try {
+        const response = await fetch('/admin/actualizar-estado-pedido', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: pedidoId, estado: nuevoEstado })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(`✅ Estado actualizado a ${nuevoEstado}`);
+            // Actualizar el total de ventas en el dashboard
+            actualizarVentasTotales();
+        } else {
+            showToast("❌ Error al actualizar estado");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        showToast("❌ Error de conexión");
+    }
+}
+/* --- FUNCIÓN PARA ACTUALIZAR VENTAS TOTALES --- */
+async function actualizarVentasTotales() {
+    try {
+        const res = await fetch('/admin/api/ventas-totales');
+        const data = await res.json();
+        
+        const ventasElement = document.querySelector('.stat-card:first-child .value');
+        if (ventasElement) {
+            ventasElement.textContent = data.total.toLocaleString() + ' Bs';
+        }
+    } catch (e) {
+        console.error("Error al actualizar ventas:", e);
     }
 }
 </script>
