@@ -89,12 +89,15 @@ app.use((req, res, next) => {
     next();
 });
 
-// --- MIDDLEWARE DE PROTECCIÓN ---
 function isAdmin(req, res, next) {
     if (req.session.user && req.session.user.rol === 'admin') {
         return next();
     }
-    // Redirigimos sin loguear nada
+    // Para peticiones AJAX/JSON, responder con 403
+    if (req.xhr || req.headers.accept.includes('json')) {
+        return res.status(403).json({ error: "Acceso denegado" });
+    }
+    // Para peticiones normales, redirigir
     res.redirect('/?status=error_auth');
 }
 
