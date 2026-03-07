@@ -545,36 +545,7 @@ function abrirConfirmar(url, mensaje, rowId, countId) {
     window.onclick = (e) => { 
         if(e.target.classList.contains('modal-overlay')) closeModal(e.target.id);
     }
-    async function cambiarVista(vista, elemento) {
-    // 1. Manejo de clases activas
-    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-    elemento.classList.add('active');
-
-    // 2. Ocultar todas las secciones primero
-    // Esto es más limpio que ocultar una por una
-    document.getElementById('section-dashboard').style.display = 'none';
-    document.getElementById('section-usuarios').style.display = 'none';
-    document.getElementById('section-pedidos').style.display = 'none';
-    // Si tuvieras 'section-pedidos', aquí pondrías: document.getElementById('section-pedidos').style.display = 'none';
-
-    // 3. Mostrar solo la que corresponde
-    switch(vista) {
-        case 'dashboard':
-            document.getElementById('section-dashboard').style.display = 'block';
-            break;
-        case 'usuarios':
-            document.getElementById('section-usuarios').style.display = 'block';
-            cargarUsuarios(); // Cargamos datos solo aquí
-            break;
-        case 'pedidos':
-            document.getElementById('section-pedidos').style.display = 'block';
-            console.log("Cargando sección de pedidos...");
-            break;
-        default:
-            // Por seguridad, siempre mostramos el dashboard si algo sale mal
-            document.getElementById('section-dashboard').style.display = 'block';
-    }
-}
+    
 async function cargarUsuarios() {
     const tbody = document.getElementById('user-table-body');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Cargando usuarios...</td></tr>';
