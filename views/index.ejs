@@ -133,7 +133,7 @@
         </button>
         <div class="dropdown-menu" id="userMenu">
             <a href="#"><i class="fas fa-shopping-bag"></i> Mis Pedidos</a>
-            <a href="/logout" style="color: #ff5555;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+            <a href="#" onclick="cerrarSesion()" style="color: #ff5555;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
             <hr style="border: 0.5px solid #333; margin: 5px 0;">
             <a href="#" id="link-admin" style="color: var(--gold); font-size: 0.7rem; opacity: 0.7;"><i class="fas fa-shield-halved"></i> Modo Admin</a>
         </div>
@@ -657,6 +657,21 @@ if (<%= typeof user !== 'undefined' && user ? 'true' : 'false' %>) {
     });
     
     console.log("🟢 Sistema de actividad iniciado");
+}
+/* --- CERRAR SESIÓN Y ACTUALIZAR ACTIVIDAD --- */
+async function cerrarSesion() {
+    try {
+        // Enviar una última actualización para poner offline
+        await fetch('/api/actualizar-actividad-offline', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (e) {
+        console.error("Error al actualizar estado:", e);
+    } finally {
+        // Redirigir al logout
+        window.location.href = '/logout';
+    }
 }
 </script>
 
