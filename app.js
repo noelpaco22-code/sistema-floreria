@@ -267,6 +267,22 @@ app.post('/api/guardar-pedido', async (req, res) => {
         client.release();
     }
 });
+// --- ACTUALIZAR ACTIVIDAD AL CERRAR SESIÓN (PONER OFFLINE) ---
+app.post('/api/actualizar-actividad-offline', async (req, res) => {
+    if (!req.session.user) return res.status(401).json({ error: "No autorizado" });
+    
+    try {
+        // Poner la última actividad hace 10 minutos para que aparezca offline
+        await pool.query(
+            'UPDATE usuarios SET ultima_actividad = NOW() - INTERVAL $1 WHERE id = $2',
+            ['10 minutes', req.session.user.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Error al actualizar actividad:", err);
+        res.status(500).json({ error: "Error del servidor" });
+    }
+});
 app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
