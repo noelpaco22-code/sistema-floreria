@@ -603,13 +603,13 @@ function iniciarActualizacionAutomatica() {
         clearInterval(intervaloUsuarios);
     }
     
-    // Actualizar cada 3 segundos
+    // Actualizar cada 10 segundos
     intervaloUsuarios = setInterval(() => {
         const seccionUsuarios = document.getElementById('section-usuarios');
         if (seccionUsuarios && seccionUsuarios.style.display === 'block') {
             cargarUsuarios();
         }
-    }, 3000); // 3000ms = 3 segundos
+    }, 10000); // 10000ms = 10 segundos
 }
 
 // ===== FUNCIÓN MODIFICADA cambiarVista =====
@@ -727,8 +727,10 @@ function confirmarEliminarUsuario(id, nombre) {
     form.onsubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('/admin/eliminar-usuario/' + id, { method: 'POST',
-    credentials: 'include' });
+            const res = await fetch('/admin/eliminar-usuario/' + id, { 
+                method: 'POST',
+                credentials: 'include' 
+            });
             const data = await res.json();
             
             if (data.success) {
