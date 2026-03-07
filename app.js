@@ -275,10 +275,10 @@ app.post('/api/actualizar-actividad-offline', async (req, res) => {
     if (!req.session.user) return res.status(401).json({ error: "No autorizado" });
     
     try {
-        // Poner la última actividad hace 10 minutos para que aparezca offline
+        // ✅ CORREGIDO: INTERVAL con valor fijo (sin usar $1)
         await pool.query(
-            'UPDATE usuarios SET ultima_actividad = NOW() - INTERVAL $1 WHERE id = $2',
-            ['10 minutes', req.session.user.id]
+            'UPDATE usuarios SET ultima_actividad = NOW() - INTERVAL \'10 minutes\' WHERE id = $1',
+            [req.session.user.id]
         );
         res.json({ success: true });
     } catch (err) {
