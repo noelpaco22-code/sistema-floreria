@@ -580,13 +580,12 @@ async function cargarUsuarios() {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Cargando usuarios...</td></tr>';
     
     try {
-        // 👈 CAMBIO IMPORTANTE: Usar la nueva ruta con estados
-      const res = await fetch('/admin/api/usuarios-con-estado', {
-    credentials: 'include',
-    headers: {
-        'Accept': 'application/json'
-    }
-});
+        const res = await fetch('/admin/api/usuarios-con-estado', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
         const usuarios = await res.json();
         
         if (usuarios.length === 0) {
@@ -621,6 +620,54 @@ async function cargarUsuarios() {
     } catch (e) {
         console.error("Error al cargar usuarios:", e);
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #ff4d4d;">Error al cargar usuarios</td></tr>';
+    }
+}
+
+// ===== NUEVA FUNCIÓN PARA ACTUALIZACIÓN AUTOMÁTICA =====
+let intervaloUsuarios = null;
+
+function iniciarActualizacionAutomatica() {
+    // Limpiar intervalo anterior si existe
+    if (intervaloUsuarios) {
+        clearInterval(intervaloUsuarios);
+    }
+    
+    // Actualizar cada 3 segundos
+    intervaloUsuarios = setInterval(() => {
+        const seccionUsuarios = document.getElementById('section-usuarios');
+        if (seccionUsuarios && seccionUsuarios.style.display === 'block') {
+            cargarUsuarios();
+        }
+    }, 3000); // 3000ms = 3 segundos
+}
+
+// ===== FUNCIÓN MODIFICADA cambiarVista =====
+async function cambiarVista(vista, elemento) {
+    // 1. Manejo de clases activas
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    elemento.classList.add('active');
+
+    // 2. Ocultar todas las secciones
+    document.getElementById('section-dashboard').style.display = 'none';
+    document.getElementById('section-usuarios').style.display = 'none';
+    document.getElementById('section-pedidos').style.display = 'none';
+
+    // 3. Mostrar solo la que corresponde
+    switch(vista) {
+        case 'dashboard':
+            document.getElementById('section-dashboard').style.display = 'block';
+            break;
+        case 'usuarios':
+            document.getElementById('section-usuarios').style.display = 'block';
+            cargarUsuarios(); // Carga inicial
+            iniciarActualizacionAutomatica(); // Iniciar actualización cada 3 segundos
+            break;
+        case 'pedidos':
+            document.getElementById('section-pedidos').style.display = 'block';
+            console.log("Cargando sección de pedidos...");
+            break;
+        default:
+            document.getElementById('section-dashboard').style.display = 'block';
     }
 }
 /* --- FUNCIÓN PARA VER DETALLE DE PEDIDOS --- */
