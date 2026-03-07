@@ -629,6 +629,35 @@ function verificarAccesoCarrito(elemento) {
         setTimeout(() => { openForm('login'); }, 800);
     }
 }
+/* --- ACTUALIZAR ACTIVIDAD DEL USUARIO --- */
+if (<%= typeof user !== 'undefined' && user ? 'true' : 'false' %>) {
+    // Función para actualizar actividad
+    async function actualizarActividad() {
+        try {
+            await fetch('/api/actualizar-actividad', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (e) {
+            console.error("Error al actualizar actividad:", e);
+        }
+    }
+    
+    // Actualizar cada 30 segundos
+    setInterval(actualizarActividad, 30000);
+    
+    // Actualizar al hacer clic en cualquier parte
+    document.addEventListener('click', actualizarActividad);
+    
+    // Actualizar al mover el mouse (cada 2 minutos)
+    let actividadTimeout;
+    document.addEventListener('mousemove', () => {
+        clearTimeout(actividadTimeout);
+        actividadTimeout = setTimeout(actualizarActividad, 2000);
+    });
+    
+    console.log("🟢 Sistema de actividad iniciado");
+}
 </script>
 
 <div class="whatsapp-container">
