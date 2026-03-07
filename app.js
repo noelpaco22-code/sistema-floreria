@@ -128,6 +128,29 @@ app.get('/admin/api/usuarios', isAdmin, async (req, res) => {
         res.status(500).json({ error: "No se pudieron obtener usuarios" });
     }
 });
+// --- OBTENER USUARIOS CON ESTADO EN LÍNEA ---
+app.get('/admin/api/usuarios-con-estado', isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                id, 
+                nombre, 
+                email,
+                CASE 
+                    WHEN ultima_actividad > NOW() - INTERVAL '5 minutes' 
+                    THEN 'online' 
+                    ELSE 'offline' 
+                END as estado
+            FROM usuarios 
+            ORDER BY id DESC
+        `);
+        
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error al cargar usuarios con estado:", err);
+        res.status(500).json({ error: "Error al cargar usuarios" });
+    }
+});
 // --- REGISTRO / LOGIN CLIENTES ---
 app.get('/admin/api/pedido/:id', isAdmin, async (req, res) => {
     try {
@@ -302,7 +325,21 @@ app.post('/registro', async (req, res) => {
         res.redirect('/?status=error_registro');
     }
 });
-
+// --- ACTUALIZAR ÚLTIMA ACTIVIDAD DEL USUARIO ---
+app.post('/api/actualizar-actividad', async (req, res) => {
+    if (!req.session.user) return res.status(401).json({ error: "No autorizado" });
+    
+    try {
+        await pool.query(
+            'UPDATE usuarios SET ultima_actividad = NOW() WHERE id = $1',
+            [req.session.user.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Error al actualizar actividad:", err);
+        res.status(500).json({ error: "Error del servidor" });
+    }
+});
 // 2. Verificar y guardar la huella (Versión definitiva)
 app.post('/admin/webauthn-verify-register', isAdmin, async (req, res) => {
     // Tomamos el cuerpo de la petición directamente
