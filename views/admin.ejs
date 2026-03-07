@@ -581,7 +581,12 @@ async function cargarUsuarios() {
     
     try {
         // 👈 CAMBIO IMPORTANTE: Usar la nueva ruta con estados
-        const res = await fetch('/admin/api/usuarios-con-estado');
+      const res = await fetch('/admin/api/usuarios-con-estado', {
+    credentials: 'include',
+    headers: {
+        'Accept': 'application/json'
+    }
+});
         const usuarios = await res.json();
         
         if (usuarios.length === 0) {
@@ -626,8 +631,11 @@ async function verDetallePedido(id) {
     contenido.innerHTML = "Cargando detalles...";
 
     try {
-        const res = await fetch(`/admin/api/pedido/${id}`);
-        const data = await res.json(); 
+        const res = await fetch(`/admin/api/pedido/${id}`, {
+    credentials: 'include'
+});
+const data = await res.json();  // ✅ AHORA SÍ, FETCH CERRADO
+        
         
         let html = `
             <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
@@ -668,11 +676,10 @@ async function verDetallePedido(id) {
 function abrirConfirmarPedido(id) {
     const form = document.getElementById('formConfirmarBorrado');
     form.action = '/admin/eliminar-pedido/' + id;
-    
     form.onsubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('/admin/eliminar-pedido/' + id, { method: 'POST' });
+            const res = await fetch('/admin/eliminar-pedido/' + id, { method: 'POST', credentials: 'include' });
             
             if (res.ok) {
                 showToast("✅ Pedido eliminado");
@@ -702,7 +709,8 @@ function confirmarEliminarUsuario(id, nombre) {
     form.onsubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('/admin/eliminar-usuario/' + id, { method: 'POST' });
+            const res = await fetch('/admin/eliminar-usuario/' + id, { method: 'POST',
+    credentials: 'include' });
             const data = await res.json();
             
             if (data.success) {
@@ -748,7 +756,7 @@ async function cambiarEstadoPedido(selectElement) {
     
     try {
         const response = await fetch('/admin/actualizar-estado-pedido', {
-            method: 'POST',
+            method: 'POST',credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: pedidoId, estado: nuevoEstado })
         });
@@ -770,7 +778,8 @@ async function cambiarEstadoPedido(selectElement) {
 /* --- FUNCIÓN PARA ACTUALIZAR VENTAS TOTALES --- */
 async function actualizarVentasTotales() {
     try {
-        const res = await fetch('/admin/api/ventas-totales');
+        const res = await fetch('/admin/api/ventas-totales', {
+            credentials: 'include'});
         const data = await res.json();
         
         const ventasElement = document.querySelector('.stat-card:first-child .value');
