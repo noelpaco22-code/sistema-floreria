@@ -60,6 +60,11 @@
 .estado-select option[value="pendiente"] { color: #3498db; }
 .estado-select option[value="proceso"] { color: #f1c40f; }
 .estado-select option[value="completado"] { color: #2ecc71; }
+@keyframes pulso {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
     </style>
 </head>
 <body>
@@ -575,7 +580,8 @@ async function cargarUsuarios() {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Cargando usuarios...</td></tr>';
     
     try {
-        const res = await fetch('/admin/api/usuarios');
+        // 👈 CAMBIO IMPORTANTE: Usar la nueva ruta con estados
+        const res = await fetch('/admin/api/usuarios-con-estado');
         const usuarios = await res.json();
         
         if (usuarios.length === 0) {
@@ -586,7 +592,19 @@ async function cargarUsuarios() {
         tbody.innerHTML = usuarios.map(u => `
             <tr id="row-user-${u.id}">
                 <td>${u.id}</td>
-                <td>${u.nombre}</td>
+                <td>
+                    ${u.nombre}
+                    <span style="
+                        display: inline-block;
+                        width: 10px;
+                        height: 10px;
+                        border-radius: 50%;
+                        background-color: ${u.estado === 'online' ? '#2ecc71' : '#95a5a6'};
+                        margin-left: 8px;
+                        box-shadow: 0 0 5px ${u.estado === 'online' ? '#2ecc71' : '#95a5a6'};
+                        animation: ${u.estado === 'online' ? 'pulso 2s infinite' : 'none'};
+                    " title="${u.estado === 'online' ? 'En línea ahora' : 'Desconectado'}"></span>
+                </td>
                 <td>${u.email}</td>
                 <td>
                     <button class="btn-del" onclick="confirmarEliminarUsuario(${u.id}, '${u.nombre}')" title="Eliminar usuario">
