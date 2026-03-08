@@ -600,16 +600,19 @@ let intervaloUsuarios = null;
 function iniciarActualizacionAutomatica() {
     // Limpiar intervalo anterior si existe
     if (intervaloUsuarios) {
+        console.log("🔄 Limpiando intervalo anterior");
         clearInterval(intervaloUsuarios);
     }
     
-    // Actualizar cada 10 segundos
+    console.log("🟢 Iniciando nuevo intervalo (cada 3s)");
+    // Actualizar cada 3 segundos
     intervaloUsuarios = setInterval(() => {
         const seccionUsuarios = document.getElementById('section-usuarios');
         if (seccionUsuarios && seccionUsuarios.style.display === 'block') {
+            console.log("📊 Actualizando usuarios:", new Date().toLocaleTimeString());
             cargarUsuarios();
         }
-    }, 10000); // 10000ms = 10 segundos
+    }, 3000); // 3000ms = 3 segundos
 }
 
 // ===== FUNCIÓN MODIFICADA cambiarVista =====
